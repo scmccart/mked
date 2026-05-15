@@ -1,0 +1,20 @@
+lockfile_version: '1'
+generated_at: '2026-05-15T14:04:00.700828+00:00'
+apm_version: 0.13.0
+dependencies:
+- repo_url: github/awesome-copilot
+  host: github.com
+  resolved_commit: 4e4b34c48d3f50934a7a073aed0d05fd46e99b09
+  virtual_path: plugins/awesome-copilot
+  is_virtual: true
+  package_type: marketplace_plugin
+  deployed_files:
+  - .agents/skills/suggest-awesome-github-copilot-agents
+  - .agents/skills/suggest-awesome-github-copilot-instructions
+  - .agents/skills/suggest-awesome-github-copilot-skills
+  - .github/agents/meta-agentic-project-scaffold.agent.md
+  deployed_file_hashes:
+    .github/agents/meta-agentic-project-scaffold.agent.md: sha256:ff165bf768655e2733948ee24b671672885d69b13ca9d16dd8343236816f5f24
+  content_hash: sha256:41d38e70147d07aa6938bb7ec232162404aa5e98a066349f6b9d39ba1178d97a
+  discovered_via: awesome-copilot
+  marketplace_plugin_name: awesome-copilot

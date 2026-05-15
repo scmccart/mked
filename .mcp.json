@@ -1,0 +1,45 @@
+{
+  "mcpServers": {
+    "mermaid": {
+      "type": "stdio",
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "--prefer-offline",
+        "mcp-mermaid"
+      ],
+      "tools": ["*"]
+    },
+    "context7": {
+      "type": "local",
+      "command": "npx",
+      "args": [
+        "-y",
+        "--prefer-offline",
+        "@upstash/context7-mcp"
+      ],
+      "tools": ["*"]
+    },
+    "markitdown": {
+      "type": "local",
+      "command": "uvx",
+      "args": [
+        "markitdown-mcp"
+      ],
+      "tools": ["*"]
+    },
+    "nuget": {
+      "type": "stdio",
+      "command": "dnx",
+      "args": [
+        "NuGet.Mcp.Server",
+        "--source",
+        "https://api.nuget.org/v3/index.json",
+        "--yes"
+      ],
+      "tools": ["*"]
+    }
+  }
+}
