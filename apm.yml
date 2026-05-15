@@ -5,6 +5,10 @@ author: Sean McCarthy
 dependencies:
   apm:
   - github/awesome-copilot/plugins/awesome-copilot
+  - github/awesome-copilot/plugins/csharp-dotnet-development
+  - dotnet/skills/plugins/dotnet
+  - dotnet/skills/plugins/dotnet-diag
+  - dotnet/skills/plugins/dotnet-test
   mcp: []
 includes: auto
 scripts: {}
