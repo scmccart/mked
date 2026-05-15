@@ -3,7 +3,7 @@
     {
       "type": "promptString",
       "id": "consoleapp-project-path",
-      "description": "The absolute path to the console app project Directory"
+      "description": "The absolute path to the console app project directory"
     }
   ],
   "servers": {
