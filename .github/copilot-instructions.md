@@ -66,6 +66,25 @@ The tool is published as NativeAOT. Generated code must be trim-safe:
 - Pattern: Arrange / Act / Assert
 - Application use cases are unit-testable via in-memory fakes of Domain interfaces — no file system, no terminal
 
+## PowerShell Scripting Conventions
+
+When generating PowerShell commands that embed text containing backtick characters (e.g., Markdown inline code passed to `gh pr create`, `gh pr edit`, `gh issue comment`, etc.):
+
+- **Use single-quoted here-strings** (`@'...'@`) for multi-line string values. Single-quoted here-strings perform no escape or variable substitution, so backticks pass through literally.
+- **Never use backslash as an escape character** in PowerShell — the escape character is `` ` `` (backtick).
+- To include a literal backtick inside a *double-quoted* string, double it: ` `` `.
+
+```powershell
+# CORRECT — single-quoted here-string, backticks are literal
+$body = @'
+Use `Result<T,E>` for all fallible operations.
+'@
+gh pr edit 6 --body $body
+
+# WRONG — backslash-backtick is not a valid escape sequence
+gh pr edit 6 --body "Use \`Result<T,E>\` for all fallible operations."
+```
+
 ## Documentation
 
 Reference docs live in `docs/`:
