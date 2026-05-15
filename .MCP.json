@@ -2,7 +2,7 @@
   "inputs": [
     {
       "type": "promptString",
-      "id": "consoleapp-project-path",
+      "id": "awesome-copilot-project-path",
       "description": "The absolute path to the console app project directory"
     }
   ],
@@ -13,7 +13,7 @@
       "args": [
         "run",
         "--project",
-        "${input:consoleapp-project-path}"
+        "${input:awesome-copilot-project-path}"
       ]
     }
   }
