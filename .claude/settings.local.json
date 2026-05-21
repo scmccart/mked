@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__plugin_context-mode_context-mode__ctx_batch_execute",
+      "mcp__plugin_context-mode_context-mode__ctx_insight",
+      "mcp__plugin_context-mode_context-mode__ctx_doctor",
+      "Bash(git -C /c/dev/mked log --oneline -15)",
+      "Bash(git -C \"C:/dev/mked\" log --oneline -15)",
+      "Bash(git *)"
+    ]
+  },
+  "enabledMcpjsonServers": [
+    "mermaid",
+    "context7",
+    "markitdown",
+    "nuget",
+    "github"
+  ]
+}

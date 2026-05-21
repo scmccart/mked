@@ -13,9 +13,11 @@
       "tools": ["*"]
     },
     "context7": {
-      "type": "local",
-      "command": "npx",
+      "type": "stdio",
+      "command": "cmd",
       "args": [
+        "/c",
+        "npx",
         "-y",
         "--prefer-offline",
         "@upstash/context7-mcp"
@@ -23,23 +25,35 @@
       "tools": ["*"]
     },
     "markitdown": {
-      "type": "local",
-      "command": "uvx",
+      "type": "stdio",
+      "command": "cmd",
       "args": [
+        "/c",
+        "uvx",
         "markitdown-mcp"
       ],
       "tools": ["*"]
     },
     "nuget": {
       "type": "stdio",
-      "command": "dnx",
+      "command": "cmd",
       "args": [
+        "/c",
+        "dnx",
         "NuGet.Mcp.Server",
         "--source",
         "https://api.nuget.org/v3/index.json",
         "--yes"
       ],
       "tools": ["*"]
+    },
+    "github": {
+      "type": "http",
+      "url": "https://api.githubcopilot.com/mcp/",
+      "headers": {
+        "Authorization": "Bearer ${GITHUB_TOKEN}",
+        "X-MCP-Toolsets": "actions,git,issues,pull_requests,repos,github_support_docs_search"
+      }
     }
   }
 }

@@ -55,7 +55,3 @@ CodeCoverage/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
-
-
-# APM dependencies
-apm_modules/

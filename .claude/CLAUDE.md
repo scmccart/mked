@@ -1,4 +1,4 @@
-# mked — Copilot Instructions
+# mked — Project Guidelines
 
 ## Project Overview
 
