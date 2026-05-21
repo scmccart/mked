@@ -1,0 +1,36 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet build*)",
+      "Bash(dotnet test*)",
+      "Bash(dotnet publish*)",
+      "Bash(dotnet format*)",
+      "Bash(dotnet run*)",
+      "Bash(dotnet add*)",
+      "Bash(dotnet remove*)",
+      "Bash(dotnet restore*)",
+      "Bash(dotnet tool*)",
+      "Bash(dotnet list*)",
+      "Bash(git status*)",
+      "Bash(git log*)",
+      "Bash(git diff*)",
+      "Bash(git branch*)",
+      "Bash(git stash*)",
+      "Bash(gh pr*)",
+      "Bash(gh issue*)",
+      "Bash(gh run*)",
+      "Bash(gh release*)",
+      "mcp__nuget__get_latest_package_version",
+      "mcp__nuget__get_package_context",
+      "mcp__nuget__review_supply_chain_security",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__query-docs",
+      "mcp__mermaid__generate_mermaid_diagram",
+      "mcp__markitdown__convert_to_markdown"
+    ],
+    "deny": [
+      "Bash(git push --force*)",
+      "Bash(git reset --hard*)"
+    ]
+  }
+}
