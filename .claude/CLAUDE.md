@@ -62,9 +62,9 @@ The tool is published as NativeAOT. Generated code must be trim-safe:
 ## Testing
 
 - Framework: **xUnit**
-- Mocking: **Moq** preferred (AOT-compatible)
+- Mocking: **Moq**
 - Assertions: **AwesomeAssertions**
-- Architectural Testing: ArchUnitNet
+- Architectural Testing: **ArchUnitNet**
 - Pattern: Arrange / Act / Assert
 - Application use cases are unit-testable via in-memory fakes of Domain interfaces — no file system, no terminal
 

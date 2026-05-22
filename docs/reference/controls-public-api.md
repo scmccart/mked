@@ -44,7 +44,11 @@ public MarkdownViewer(string markdownText);
 ### Extension method
 
 ```csharp
-AnsiConsole.ViewMarkdown(string markdownText);
+// Using the default console
+AnsiConsole.Console.ViewMarkdown(markdownText);
+
+// Using a custom IAnsiConsole instance
+console.ViewMarkdown(markdownText);
 ```
 
 ---
@@ -76,7 +80,11 @@ public MarkdownEditor(string initialText = "");
 ### Extension method
 
 ```csharp
-string AnsiConsole.EditMarkdown(string initialText = "");
+// Using the default console
+string result = AnsiConsole.Console.EditMarkdown(initialText);
+
+// Using a custom IAnsiConsole instance
+string result = console.EditMarkdown(initialText);
 ```
 
 ---
@@ -86,7 +94,7 @@ string AnsiConsole.EditMarkdown(string initialText = "");
 An immutable value object describing the ANSI styles applied to each Markdown element.
 
 ```csharp
-public sealed class MarkdownTheme
+public sealed record class MarkdownTheme
 {
     public static MarkdownTheme Default { get; }
 

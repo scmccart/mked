@@ -57,10 +57,13 @@ JsonSerializer.Serialize(myObject, AppJsonContext.Default.MyObject);
 ### `Regex` without `[GeneratedRegex]`
 
 ```csharp
-// WRONG — Regex.CompileToAssembly and Reflection.Emit are not available
+// WRONG — RegexOptions.Compiled uses Reflection.Emit, unavailable under NativeAOT
+var re = new Regex(@"\*\*(.+?)\*\*", RegexOptions.Compiled);
+
+// TOLERATED but slow — interpreted Regex works under NativeAOT; avoid in hot paths
 var re = new Regex(@"\*\*(.+?)\*\*");
 
-// OK — source-generated at build time
+// PREFERRED — source-generated at build time; fastest and fully AOT/trim-safe
 [GeneratedRegex(@"\*\*(.+?)\*\*")]
 private static partial Regex BoldPattern();
 ```

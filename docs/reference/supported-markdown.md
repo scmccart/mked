@@ -32,6 +32,7 @@ mked targets [CommonMark](https://spec.commonmark.org/) as its baseline plus a s
 | Link | `[text](url)` or `[text][ref]` with `[ref]: url` |
 | Autolink | `<https://example.com>` |
 | Image | `![alt](url)` — displayed as `[image: alt]` in the viewer |
+| HTML entities | `&amp;` `&lt;` `&gt;` `&quot;` — decoded; other named/numeric entities passed through literally |
 
 ## Not supported (v1)
 
@@ -39,12 +40,11 @@ mked targets [CommonMark](https://spec.commonmark.org/) as its baseline plus a s
 |---|---|
 | Raw HTML tags | Stripped from output; not rendered |
 | HTML blocks | Treated as literal fenced text |
-| Inline HTML entities | Common entities (`&amp;`, `&lt;`, `&gt;`, `&quot;`) are decoded; others passed through literally |
 | Math / LaTeX | Not planned for v1 |
 | Footnotes | Not planned for v1 |
 | Definition lists | Not planned for v1 |
 
-HTML stripping is enforced by omitting the `HtmlBlocks` and `HtmlInline` extensions from the Markdig pipeline.
+HTML output is suppressed at the renderer level — `HtmlBlock` and `HtmlInline` nodes are parsed normally, but their renderers are overridden to emit nothing. (HTML parsing in Markdig is part of the core pipeline, not a separate extension that can be omitted.)
 
 ## Markdig extensions enabled
 
