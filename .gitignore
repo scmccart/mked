@@ -39,6 +39,9 @@ ScaffoldingReadMe.txt
 # dotenv environment variables file
 .env
 
+# Claude Code local settings
+.claude/settings.local.json
+
 # Others
 ~$*
 *~
