@@ -41,6 +41,7 @@ All operations that can fail return `Result<T,E>` — not exceptions. Use `Resul
 
 ## Code Style
 
+- **One type per file** — each top-level type lives in its own file named after the type. Exception: a generic type and its non-generic companion factory class may share a file (e.g. `Result<T,E>` and `Result` in `Result.cs`); extension classes always get their own file (e.g. `ResultExtensions.cs`).
 - **File-scoped namespaces** (`namespace Mked.Domain;` not `namespace Mked.Domain { }`)
 - **Line endings**: `lf`
 - **Indent**: 4 spaces for C#, 2 for JSON/YAML/Markdown
