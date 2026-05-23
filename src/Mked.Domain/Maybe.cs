@@ -5,13 +5,13 @@ namespace Mked.Domain;
 /// or <see cref="None"/> representing absence. Use in place of <see langword="null"/>
 /// for intentional optionality.
 /// </summary>
-public abstract record Option<T>
+public abstract record Maybe<T>
 {
     /// <summary>Represents a present value.</summary>
-    public sealed record Some(T Value) : Option<T>;
+    public sealed record Some(T Value) : Maybe<T>;
 
     /// <summary>Represents an absent value.</summary>
-    public sealed record None : Option<T>;
+    public sealed record None : Maybe<T>;
 
     /// <summary>Returns <see langword="true"/> when a value is present.</summary>
     public bool IsSome => this is Some;
@@ -20,13 +20,12 @@ public abstract record Option<T>
     public bool IsNone => this is None;
 }
 
-/// <summary>Factory methods for creating <see cref="Option{T}"/> values.</summary>
-public static class Option
+/// <summary>Factory methods for creating <see cref="Maybe{T}"/> values.</summary>
+public static class Maybe
 {
-    /// <summary>Creates an <see cref="Option{T}"/> containing <paramref name="value"/>.</summary>
-    public static Option<T> Some<T>(T value) => new Option<T>.Some(value);
+    /// <summary>Creates a <see cref="Maybe{T}"/> containing <paramref name="value"/>.</summary>
+    public static Maybe<T> Some<T>(T value) => new Maybe<T>.Some(value);
 
-    /// <summary>Creates an absent <see cref="Option{T}"/>.</summary>
-    public static Option<T> None<T>() => new Option<T>.None();
+    /// <summary>Creates an absent <see cref="Maybe{T}"/>.</summary>
+    public static Maybe<T> None<T>() => new Maybe<T>.None();
 }
-

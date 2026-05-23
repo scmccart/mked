@@ -1,11 +1,11 @@
 namespace Mked.Domain.Tests;
 
-public class Option_UnwrapOr_Tests
+public class Maybe_UnwrapOr_Tests
 {
     [Fact]
     public void OnSome_ReturnsValue()
     {
-        var value = Option.Some(11).UnwrapOr(0);
+        var value = Maybe.Some(11).UnwrapOr(0);
 
         value.Should().Be(11);
     }
@@ -13,7 +13,7 @@ public class Option_UnwrapOr_Tests
     [Fact]
     public void OnNone_ReturnsFallback()
     {
-        var value = Option.None<int>().UnwrapOr(99);
+        var value = Maybe.None<int>().UnwrapOr(99);
 
         value.Should().Be(99);
     }

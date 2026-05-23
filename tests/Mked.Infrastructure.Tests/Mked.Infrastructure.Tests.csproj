@@ -10,18 +10,18 @@
     <PackageReference Include="AwesomeAssertions" />
     <PackageReference Include="coverlet.collector" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
-    <PackageReference Include="Moq" />
     <PackageReference Include="TngTech.ArchUnitNET" />
     <PackageReference Include="TngTech.ArchUnitNET.xUnit" />
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Mked.Domain\Mked.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Mked.Infrastructure\Mked.Infrastructure.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="AwesomeAssertions" />
     <Using Include="Mked.Domain" />
+    <Using Include="Mked.Infrastructure" />
     <Using Include="Xunit" />
   </ItemGroup>
 </Project>

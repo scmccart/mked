@@ -40,15 +40,15 @@ public sealed class MarkdownDocument
 
     /// <summary>
     /// Raw YAML front matter text when a YAML block is the first block in the document;
-    /// <see cref="Option{T}.None"/> otherwise.
+    /// <see cref="Maybe{T}.None"/> otherwise.
     /// </summary>
-    public Option<string> Frontmatter
+    public Maybe<string> Frontmatter
     {
         get
         {
             if (_ast.Count > 0 && _ast[0] is YamlFrontMatterBlock yaml)
-                return Option.Some(yaml.Lines.ToString());
-            return Option.None<string>();
+                return Maybe.Some(yaml.Lines.ToString());
+            return Maybe.None<string>();
         }
     }
 }

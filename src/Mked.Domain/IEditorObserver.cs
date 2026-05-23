@@ -4,8 +4,8 @@ namespace Mked.Domain;
 public interface IEditorObserver
 {
     /// <summary>Called when the text buffer is replaced with <paramref name="newBuffer"/>.</summary>
-    void OnBufferChanged(string newBuffer);
+    public void OnBufferChanged(string newBuffer);
 
     /// <summary>Called when the cursor moves to <paramref name="position"/>.</summary>
-    void OnCursorMoved(CursorPosition position);
+    public void OnCursorMoved(CursorPosition position);
 }

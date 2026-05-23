@@ -1,8 +1,10 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/Mked.Domain/Mked.Domain.csproj" />
+    <Project Path="src/Mked.Infrastructure/Mked.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Mked.Domain.Tests/Mked.Domain.Tests.csproj" />
+    <Project Path="tests/Mked.Infrastructure.Tests/Mked.Infrastructure.Tests.csproj" />
   </Folder>
 </Solution>

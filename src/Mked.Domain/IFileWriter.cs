@@ -7,5 +7,5 @@ public interface IFileWriter
     /// Writes <paramref name="content"/> to <paramref name="path"/>, returning <c>Ok</c>
     /// on success or <c>Err</c> with an <see cref="MkedError.IoError"/> on failure.
     /// </summary>
-    Task<Result<Unit, MkedError>> WriteAsync(string path, string content);
+    public Task<Result<Unit, MkedError>> WriteAsync(string path, string content);
 }
