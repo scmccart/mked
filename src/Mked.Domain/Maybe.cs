@@ -16,7 +16,7 @@ public abstract record Maybe<T>
     /// <summary>Returns <see langword="true"/> when a value is present.</summary>
     public bool IsSome => this is Some;
 
-    /// <summary>Returns <see langword="false"/> when no value is present.</summary>
+    /// <summary>Returns <see langword="true"/> when no value is present.</summary>
     public bool IsNone => this is None;
 }
 
