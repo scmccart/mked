@@ -1,9 +1,3 @@
-using System.Collections.Generic;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
-using Mked.Infrastructure;
-
 namespace Mked.Infrastructure.Tests.Integration;
 
 [Trait("Category", "Integration")]
@@ -66,6 +60,7 @@ public sealed class FileWatcherAdapter_WatchAsync_Tests : IDisposable
         // Arrange
         string filePath = CreateTempFile();
         FileWatcherAdapter adapter = CreateAdapter(filePath);
+        await Task.Delay(100); // allow FileSystemWatcher to become active before writing
 
         // Act — write 5 times rapidly before collecting
         for (int i = 0; i < 5; i++)

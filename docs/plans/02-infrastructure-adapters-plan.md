@@ -44,8 +44,8 @@ have real types to check against.
   behind in any outcome.
   Depends on: Task 1
 
-- [ ] **Task 4: `StdinInputStream`**
-  Implement `StdinInputStream` in `Mked.Infrastructure` — `IInputStream` that accepts a
+- [ ] **Task 4: `StdinInputReader`**
+  Implement `StdinInputReader` in `Mked.Infrastructure` — `IInputReader` that accepts a
   `TextReader` (defaults to `Console.In`) and an `isRedirected` flag (defaults to
   `Console.IsInputRedirected`). When not redirected, `ReadChunksAsync` completes immediately
   with no items. Otherwise it loops `ReadLineAsync`: non-null lines yield `Result.Ok(line)`;

@@ -27,11 +27,11 @@
 
 ## Architecture Overview
 
-`Mked.Infrastructure` is created from scratch. One new interface (`IFileWatcher`) is added to `Mked.Domain`; no existing domain types are modified. No other projects are touched.
+`Mked.Infrastructure` is created from scratch. Several changes land in `Mked.Domain` alongside the new infrastructure layer: `IFileWatcher` is added; `Option<T>` is replaced by `Maybe<T>`; and `IInputStream` is renamed to `IInputReader` (with the implementation renamed from `StdinInputStream` to `StdinInputReader`). No other projects are touched.
 
 | Layer | Project | Role |
 |-------|---------|------|
-| Domain | `Mked.Domain` | Gains `IFileWatcher` — the only change to an existing layer |
+| Domain | `Mked.Domain` | Gains `IFileWatcher`; `Option<T>` replaced by `Maybe<T>`; `IInputStream` renamed to `IInputReader` |
 | Application | `Mked.Application` | Not touched |
 | Infrastructure | `Mked.Infrastructure` | New project; implements all four domain interfaces |
 | Presentation | `Mked.Console` | Not touched |
@@ -49,7 +49,7 @@
 | `IFileWatcher` | interface | `Mked.Domain` | Contract for file-change notifications; `IAsyncEnumerable<string> WatchAsync(CancellationToken)` plus `IDisposable` |
 | `FileSystemReader` | sealed class | `Mked.Infrastructure` | Implements `IFileReader` via `File.ReadAllTextAsync`; maps OS exceptions to `MkedError.IoError` |
 | `FileSystemWriter` | sealed class | `Mked.Infrastructure` | Implements `IFileWriter`; atomic write via temp file + `File.Move` |
-| `StdinInputStream` | sealed class | `Mked.Infrastructure` | Implements `IInputStream`; accepts an injected `TextReader` (defaults to `Console.In`); returns empty stream when stdin is not redirected |
+| `StdinInputReader` | sealed class | `Mked.Infrastructure` | Implements `IInputReader`; accepts an injected `TextReader` (defaults to `Console.In`); returns empty stream when stdin is not redirected |
 | `FileWatcherAdapter` | sealed class | `Mked.Infrastructure` | Implements `IFileWatcher`; wraps `FileSystemWatcher`; debounces via bounded `Channel<string>` (capacity 1, drop-on-full) |
 
 ### Modified Types
@@ -57,6 +57,9 @@
 | Type | Change | Reason |
 |------|--------|--------|
 | `Mked.Domain` | New file `IFileWatcher.cs` added | Clean Architecture requires Infrastructure adapters to implement Domain interfaces; the watcher must have a domain contract so Application can depend on the abstraction |
+| `Option<T>` | Removed; replaced by `Maybe<T>` | `Maybe` is conventional F#/Haskell naming; avoids confusion with `System.Nullable<T>` and aligns with `Some`/`None` discriminated union naming |
+| `IInputStream` | Renamed to `IInputReader` | Aligns with `IFileReader`/`IFileWriter` naming convention; `Reader` is more precise than `Stream` for line-oriented text input |
+| `StdinInputStream` | Renamed to `StdinInputReader` | Follows the interface rename above |
 
 ---
 
@@ -83,9 +86,9 @@ All exception handling is in a single `try/catch` block at the boundary; no exce
 6. On success → `Result.Ok(Unit.Value)`.
 7. On any `IOException` or `UnauthorizedAccessException`: attempt to delete the temp file (best-effort, ignore cleanup errors), then return `Result.Err(new MkedError.IoError(path, ex.Message))`.
 
-### Use Case: StdinInputStream.ReadChunksAsync
+### Use Case: StdinInputReader.ReadChunksAsync
 
-1. On construction, `StdinInputStream` accepts an optional `TextReader reader` (defaults to `Console.In`) and an optional `bool isRedirected` flag (defaults to `Console.IsInputRedirected`).
+1. On construction, `StdinInputReader` accepts an optional `TextReader reader` (defaults to `Console.In`) and an optional `bool isRedirected` flag (defaults to `Console.IsInputRedirected`).
 2. If `isRedirected` is `false`, the enumeration completes immediately without yielding anything — stdin is an interactive TTY, not a pipe.
 3. Otherwise, the adapter loops `reader.ReadLineAsync()`:
    - Non-null line → yield `Result.Ok(line)`.
@@ -128,7 +131,7 @@ All tests live in `Mked.Infrastructure.Tests` (xUnit, AwesomeAssertions; Moq not
 ```
 tests/Mked.Infrastructure.Tests/
 ├── Unit/
-│   └── StdinInputStream_*.cs
+│   └── StdinInputReader_*.cs
 └── Integration/
     ├── FileSystemReader_*.cs
     ├── FileSystemWriter_*.cs
@@ -144,7 +147,7 @@ dotnet test tests/Mked.Infrastructure.Tests --filter "Category=Integration"   # 
 
 **Unit tests** — no file system, no OS resources:
 
-- **`StdinInputStream`** (injected `StringReader` / custom `TextReader` subclass):
+- **`StdinInputReader`** (injected `StringReader` / custom `TextReader` subclass):
   - Two-line reader → two `Result.Ok` items, then complete.
   - Empty reader → enumeration completes immediately, no items.
   - `isRedirected = false` → enumeration completes immediately with no items.

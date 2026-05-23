@@ -1,6 +1,3 @@
-using System.IO;
-using Mked.Infrastructure;
-
 namespace Mked.Infrastructure.Tests.Integration;
 
 [Trait("Category", "Integration")]
@@ -113,16 +110,17 @@ public sealed class FileSystemWriter_WriteAsync_Tests : IDisposable
     [Fact]
     public async Task NoTempFileLeftAfterSuccess()
     {
-        // Arrange
-        string path = UniqueTempFile();
-        string directory = Path.GetDirectoryName(path)!;
+        // Arrange — dedicated subdirectory so the .tmp scan is scoped to this test only
+        string subDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(subDir);
+        string path = TrackPath(Path.Combine(subDir, "file.md"));
 
         // Act
         Result<Mked.Domain.Unit, MkedError> result = await _writer.WriteAsync(path, "content");
 
         // Assert
         result.IsOk.Should().BeTrue();
-        string[] tmpFiles = Directory.GetFiles(directory, ".*.tmp");
+        string[] tmpFiles = Directory.GetFiles(subDir, ".*.tmp");
         tmpFiles.Should().BeEmpty("no .tmp file should remain after a successful atomic write");
     }
 
