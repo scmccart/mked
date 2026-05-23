@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Mked.Domain/Mked.Domain.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Mked.Domain.Tests/Mked.Domain.Tests.csproj" />
+  </Folder>
+</Solution>
