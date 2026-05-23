@@ -1,6 +1,5 @@
 using System.IO;
 using Mked.Infrastructure;
-using Unit = Mked.Domain.Unit;
 
 namespace Mked.Infrastructure.Tests.Integration;
 
@@ -34,19 +33,17 @@ public sealed class FileSystemWriter_WriteAsync_Tests : IDisposable
                 if (File.Exists(path))
                     File.Delete(path);
 
-                // Remove any stray .tmp siblings left by failed writes
+                // Remove the containing directory only when it is a subdirectory we created
+                // (not the system temp root), and only when it is now empty.
                 string? dir = Path.GetDirectoryName(path);
-                if (dir is not null && Directory.Exists(dir))
+                if (dir is not null
+                    && !dir.Equals(
+                        Path.GetTempPath().TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar),
+                        StringComparison.OrdinalIgnoreCase)
+                    && Directory.Exists(dir)
+                    && Directory.GetFileSystemEntries(dir).Length == 0)
                 {
-                    foreach (string tmp in Directory.GetFiles(dir, ".*.tmp"))
-                        File.Delete(tmp);
-
-                    // Remove the directory itself only when it looks like one we created
-                    if (!dir.Equals(Path.GetTempPath(), StringComparison.OrdinalIgnoreCase)
-                        && Directory.GetFileSystemEntries(dir).Length == 0)
-                    {
-                        Directory.Delete(dir, recursive: true);
-                    }
+                    Directory.Delete(dir, recursive: true);
                 }
             }
             catch

@@ -4,5 +4,5 @@ namespace Mked.Domain;
 public readonly record struct Unit
 {
     /// <summary>The singleton unit value.</summary>
-    public static readonly Unit Value = new();
+    public static readonly Unit Value;
 }

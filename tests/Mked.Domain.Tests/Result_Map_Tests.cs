@@ -13,7 +13,7 @@ public class Result_Map_Tests
     [Fact]
     public void OnOk_CanChangeType()
     {
-        var result = Result.Ok<int, string>(5).Map(x => x.ToString());
+        var result = Result.Ok<int, string>(5).Map(x => x.ToString(System.Globalization.CultureInfo.InvariantCulture));
 
         result.Should().Be(Result.Ok<string, string>("5"));
     }

@@ -8,7 +8,7 @@ public sealed class EditorState
 {
     private interface IEditorCommand
     {
-        void Apply(EditorState state);
+        public void Apply(EditorState state);
     }
 
     private sealed class BufferCommand(string before) : IEditorCommand

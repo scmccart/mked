@@ -7,5 +7,5 @@ public interface IFileReader
     /// Reads all text from <paramref name="path"/>, returning <c>Ok</c> with the content
     /// or <c>Err</c> with an <see cref="MkedError.IoError"/> on failure.
     /// </summary>
-    Task<Result<string, MkedError>> ReadAsync(string path);
+    public Task<Result<string, MkedError>> ReadAsync(string path);
 }

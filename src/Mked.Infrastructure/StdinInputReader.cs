@@ -7,13 +7,13 @@ namespace Mked.Infrastructure;
 /// When standard input is not redirected (i.e. an interactive terminal), the enumeration
 /// completes immediately with no items.
 /// </summary>
-public sealed class StdinInputStream : IInputStream
+public sealed class StdinInputReader : IInputReader
 {
     private readonly TextReader _reader;
     private readonly bool _isRedirected;
 
     /// <summary>
-    /// Initialises a new <see cref="StdinInputStream"/>.
+    /// Initialises a new <see cref="StdinInputReader"/>.
     /// </summary>
     /// <param name="reader">
     /// The underlying <see cref="TextReader"/> to read from.
@@ -23,7 +23,7 @@ public sealed class StdinInputStream : IInputStream
     /// Whether stdin is redirected from a pipe or file.
     /// Defaults to <see cref="Console.IsInputRedirected"/> when <see langword="null"/>.
     /// </param>
-    public StdinInputStream(TextReader? reader = null, bool? isRedirected = null)
+    public StdinInputReader(TextReader? reader = null, bool? isRedirected = null)
     {
         _reader = reader ?? Console.In;
         _isRedirected = isRedirected ?? Console.IsInputRedirected;

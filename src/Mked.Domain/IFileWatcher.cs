@@ -7,5 +7,5 @@ public interface IFileWatcher : IDisposable
     /// Yields the path of the watched file each time it changes on disk. The enumeration
     /// completes when the watcher is disposed or <paramref name="cancellationToken"/> is cancelled.
     /// </summary>
-    IAsyncEnumerable<string> WatchAsync(CancellationToken cancellationToken = default);
+    public IAsyncEnumerable<string> WatchAsync(CancellationToken cancellationToken = default);
 }

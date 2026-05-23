@@ -38,12 +38,14 @@ public sealed class ViewerState
     public void SetAnchor(ViewportAnchor anchor)
     {
         if (anchor.IsNone || anchor.BlockIndex >= _document.Blocks.Count)
+        {
             throw new ArgumentOutOfRangeException(
                 nameof(anchor),
                 anchor.BlockIndex,
                 _document.IsEmpty
                     ? "Cannot set anchor on an empty document."
                     : $"Block index must be between 0 and {_document.Blocks.Count - 1}.");
+        }
         Anchor = anchor;
     }
 

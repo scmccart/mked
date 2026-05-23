@@ -1,21 +1,21 @@
 namespace Mked.Domain.Tests;
 
-public class Option_Bind_Tests
+public class Maybe_Bind_Tests
 {
     [Fact]
     public void OnSome_InvokesBinder()
     {
-        var result = Option.Some(4).Bind(x => Option.Some(x + 10));
+        var result = Maybe.Some(4).Bind(x => Maybe.Some(x + 10));
 
-        result.Should().Be(Option.Some(14));
+        result.Should().Be(Maybe.Some(14));
     }
 
     [Fact]
     public void OnSome_WhenBinderReturnsNone_ReturnsNone()
     {
-        var result = Option.Some(4).Bind(_ => Option.None<int>());
+        var result = Maybe.Some(4).Bind(_ => Maybe.None<int>());
 
-        result.Should().Be(Option.None<int>());
+        result.Should().Be(Maybe.None<int>());
     }
 
     [Fact]
@@ -23,10 +23,10 @@ public class Option_Bind_Tests
     {
         var invoked = false;
 
-        Option.None<int>().Bind(x =>
+        Maybe.None<int>().Bind(x =>
         {
             invoked = true;
-            return Option.Some(x);
+            return Maybe.Some(x);
         });
 
         invoked.Should().BeFalse();

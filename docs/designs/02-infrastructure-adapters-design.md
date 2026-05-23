@@ -116,7 +116,7 @@ All exception handling is in a single `try/catch` block at the boundary; no exce
 - **Error production boundaries**:
   - `FileSystemReader` and `FileSystemWriter` produce `MkedError.IoError` at the System.IO call boundary.
   - `StdinInputStream` produces `MkedError.StreamError` on broken-pipe `IOException`.
-  - `FileWatcherAdapter` does not produce domain errors. A `FileSystemWatcher` `Error` event (e.g., buffer overflow due to extreme event volume) logs the event at trace level and completes the channel — the consumer will stop watching and Application can decide whether to restart.
+  - `FileWatcherAdapter` does not produce domain errors. A `FileSystemWatcher` `Error` event (e.g., buffer overflow due to extreme event volume) logs a trace-level diagnostic and continues — the consumer is not interrupted.
 - **User-visible failures**: None in this epic. Error rendering is Presentation's responsibility (Epic 06).
 
 ---

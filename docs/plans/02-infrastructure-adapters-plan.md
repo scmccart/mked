@@ -20,7 +20,7 @@ have real types to check against.
 - [ ] **Task 1: Project scaffold**
   Create `Mked.Infrastructure` (class library, references `Mked.Domain`) and
   `Mked.Infrastructure.Tests` (xUnit test project, references `Mked.Infrastructure`). Add both
-  to `mked.sln`. Create `Unit/` and `Integration/` subfolders under `Mked.Infrastructure.Tests`
+  to `mked.slnx`. Create `Unit/` and `Integration/` subfolders under `Mked.Infrastructure.Tests`
   and add a `.gitkeep` placeholder in each. "Done" means `dotnet build` and `dotnet test` both
   pass with zero errors and zero warnings on the new projects.
 
