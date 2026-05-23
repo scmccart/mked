@@ -11,7 +11,7 @@
 1. Create `Mked.Infrastructure` as a new class library project that references only `Mked.Domain`.
 2. Implement `FileSystemReader` — a trim-safe `IFileReader` backed by `System.IO.File` that maps OS exceptions to `MkedError.IoError`.
 3. Implement `FileSystemWriter` — an `IFileWriter` with atomic write semantics (write to temp file, then rename) to prevent data loss on crash.
-4. Implement `StdinInputStream` — an `IInputStream` backed by `Console.In` (or any injected `TextReader`) that yields lines as an async stream and detects non-interactive stdin.
+4. Implement `StdinInputReader` — an `IInputReader` backed by `Console.In` (or any injected `TextReader`) that yields lines as an async stream and detects non-interactive stdin.
 5. Add `IFileWatcher` to `Mked.Domain` and implement `FileWatcherAdapter` — wraps `FileSystemWatcher`, debounces rapid saves via a bounded channel, and exposes file-change notifications as `IAsyncEnumerable<string>`.
 6. Create `Mked.Infrastructure.Tests` with integration tests against a real temp directory and unit tests using injected test doubles.
 
