@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\Mked.Domain\Mked.Domain.csproj" />
+    <Using Include="Mked.Domain" />
+  </ItemGroup>
+</Project>
