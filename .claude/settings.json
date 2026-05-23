@@ -37,6 +37,9 @@
     "dotnet@dotnet-agent-skills": true,
     "dotnet-diag@dotnet-agent-skills": true,
     "dotnet-test@dotnet-agent-skills": true,
-    "dotnet-nuget@dotnet-agent-skills": true
+    "dotnet-nuget@dotnet-agent-skills": true,
+    "skill-creator@claude-plugins-official": true,
+    "csharp-lsp@claude-plugins-official": true,
+    "microsoft-docs@claude-plugins-official": true
   }
 }
