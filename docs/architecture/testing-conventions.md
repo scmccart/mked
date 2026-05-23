@@ -91,6 +91,35 @@ mockWatcher.Verify(w => w.Watch("/tmp/test.md"), Times.Once);
 | Infrastructure | Adapter behaviour against a real temp directory or `MemoryStream` | Domain logic already covered |
 | Controls | Widget state transitions, render output for given input, key event handling | Actual ANSI terminal output |
 
+## Test categories
+
+Tests that touch the real file system, network, or OS resources are **integration tests**. All others are **unit tests**.
+
+Place tests in subfolders that match their category, and mark integration test classes with the `Integration` trait:
+
+```
+tests/Mked.Foo.Tests/
+├── Unit/
+│   └── FooClass_Scenario_Tests.cs
+└── Integration/
+    └── FooAdapter_Scenario_Tests.cs
+```
+
+```csharp
+[Trait("Category", "Integration")]
+public class FileSystemReader_Integration_Tests { ... }
+```
+
+Unit tests carry no trait — they are the default.
+
+```powershell
+# Unit tests only (fast, no I/O)
+dotnet test --filter "Category!=Integration"
+
+# Integration tests only
+dotnet test --filter "Category=Integration"
+```
+
 ## Running tests
 
 ```powershell
