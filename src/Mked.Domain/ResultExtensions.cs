@@ -62,7 +62,8 @@ public static class ResultExtensions
         result switch
         {
             Result<T, E>.Ok(var value) => value,
-            _ => fallback,
+            Result<T, E>.Err => fallback,
+            _ => throw new UnreachableException(),
         };
 
     /// <summary>Asynchronously transforms the success value of a <c>Task&lt;Result&gt;</c>.</summary>

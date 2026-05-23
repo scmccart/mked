@@ -12,6 +12,16 @@ public class ViewerState_Construction_Tests
     }
 
     [Fact]
+    public void Anchor_IsNone_ForEmptyDocument()
+    {
+        var doc = MarkdownDocument.Parse(string.Empty);
+        var state = new ViewerState(doc);
+
+        state.Anchor.Should().Be(ViewportAnchor.None);
+        state.Anchor.IsNone.Should().BeTrue();
+    }
+
+    [Fact]
     public void IsFollowing_FalseByDefault()
     {
         var doc = MarkdownDocument.Parse("# Heading");

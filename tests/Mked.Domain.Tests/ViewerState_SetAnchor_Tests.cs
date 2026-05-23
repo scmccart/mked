@@ -46,4 +46,26 @@ public class ViewerState_SetAnchor_Tests
 
         act.Should().NotThrow();
     }
+
+    [Fact]
+    public void NoneAnchor_ThrowsArgumentOutOfRangeException()
+    {
+        var doc = MarkdownDocument.Parse("# Heading");
+        var state = new ViewerState(doc);
+
+        Action act = () => state.SetAnchor(ViewportAnchor.None);
+
+        act.Should().Throw<ArgumentOutOfRangeException>();
+    }
+
+    [Fact]
+    public void EmptyDocument_AnySetAnchor_ThrowsArgumentOutOfRangeException()
+    {
+        var doc = MarkdownDocument.Parse(string.Empty);
+        var state = new ViewerState(doc);
+
+        Action act = () => state.SetAnchor(new ViewportAnchor(0));
+
+        act.Should().Throw<ArgumentOutOfRangeException>();
+    }
 }

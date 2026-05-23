@@ -21,6 +21,15 @@ public class ArchitectureTests
     }
 
     [Fact]
+    public void Domain_TypesDoNotDependOnSystemConsole()
+    {
+        ArchRuleDefinition
+            .Types()
+            .Should().NotDependOnAnyTypesThat().ResideInNamespaceMatching("System\\.Console.*")
+            .Check(Architecture);
+    }
+
+    [Fact]
     public void Domain_DoesNotReferenceUpperLayers()
     {
         var domainAssembly = typeof(Result).Assembly;

@@ -30,11 +30,11 @@ public class EditorState_UpdateBuffer_Tests
     }
 
     [Fact]
-    public void CanRedo_ClearedByNewBufferChange()
+    public void CanRedo_FalseAfterBufferChange()
     {
         var state = new EditorState("a");
         state.UpdateBuffer("b");
-        // Simulate a redo stack entry by checking it's empty initially
+
         state.CanRedo.Should().BeFalse();
     }
 }

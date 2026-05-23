@@ -40,7 +40,8 @@ public static class OptionExtensions
         option switch
         {
             Option<T>.Some(var value) => value,
-            _ => fallback,
+            Option<T>.None => fallback,
+            _ => throw new UnreachableException(),
         };
 
     /// <summary>Converts <c>None</c> to <c>Err</c>; passes <c>Some</c> through as <c>Ok</c>.</summary>
@@ -48,6 +49,7 @@ public static class OptionExtensions
         option switch
         {
             Option<T>.Some(var value) => Result.Ok<T, E>(value),
-            _ => Result.Err<T, E>(error),
+            Option<T>.None => Result.Err<T, E>(error),
+            _ => throw new UnreachableException(),
         };
 }

@@ -1,7 +1,7 @@
 # Epic 01 — Domain Core: Technical Design
 
 > **Epic**: [`docs/epics/01-domain-core.md`](../../docs/epics/01-domain-core.md)
-> **Status**: Draft
+> **Status**: Complete
 > **Date**: 2026-05-23
 
 ---

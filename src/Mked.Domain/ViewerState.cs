@@ -8,12 +8,15 @@ public sealed class ViewerState
 {
     private readonly MarkdownDocument _document;
 
-    /// <summary>Creates a <see cref="ViewerState"/> anchored to the first block.</summary>
+    /// <summary>
+    /// Creates a <see cref="ViewerState"/>. Anchor defaults to the first block, or
+    /// <see cref="ViewportAnchor.None"/> when the document is empty.
+    /// </summary>
     public ViewerState(MarkdownDocument document)
     {
         ArgumentNullException.ThrowIfNull(document);
         _document = document;
-        Anchor = new ViewportAnchor(0);
+        Anchor = document.IsEmpty ? ViewportAnchor.None : new ViewportAnchor(0);
     }
 
     /// <summary>The current scroll position expressed as a top-level block index.</summary>
@@ -29,16 +32,18 @@ public sealed class ViewerState
     /// Sets the scroll anchor to <paramref name="anchor"/>.
     /// </summary>
     /// <exception cref="ArgumentOutOfRangeException">
-    /// Thrown when <see cref="ViewportAnchor.BlockIndex"/> is negative or exceeds the
-    /// document's block count.
+    /// Thrown when <paramref name="anchor"/> is <see cref="ViewportAnchor.None"/>, when
+    /// the document is empty, or when <see cref="ViewportAnchor.BlockIndex"/> is out of range.
     /// </exception>
     public void SetAnchor(ViewportAnchor anchor)
     {
-        if (anchor.BlockIndex < 0 || anchor.BlockIndex >= _document.Blocks.Count)
+        if (anchor.IsNone || anchor.BlockIndex >= _document.Blocks.Count)
             throw new ArgumentOutOfRangeException(
                 nameof(anchor),
                 anchor.BlockIndex,
-                $"Block index must be between 0 and {_document.Blocks.Count - 1}.");
+                _document.IsEmpty
+                    ? "Cannot set anchor on an empty document."
+                    : $"Block index must be between 0 and {_document.Blocks.Count - 1}.");
         Anchor = anchor;
     }
 
