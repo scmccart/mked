@@ -31,7 +31,7 @@ public sealed class FileSystemWriter : IFileWriter
     /// </returns>
     public async Task<Result<Unit, MkedError>> WriteAsync(string path, string content)
     {
-        ArgumentNullException.ThrowIfNull(path);
+        ArgumentException.ThrowIfNullOrEmpty(path, nameof(path));
         ArgumentNullException.ThrowIfNull(content);
         string? rawDirectory = Path.GetDirectoryName(path);
         string directory = string.IsNullOrEmpty(rawDirectory) ? "." : rawDirectory;
