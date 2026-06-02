@@ -2,7 +2,7 @@
 
 > **Epic**: [`docs/epics/03-application-use-cases.md`](../../docs/epics/03-application-use-cases.md)
 > **Design**: [`docs/designs/03-application-use-cases-design.md`](../../docs/designs/03-application-use-cases-design.md)
-> **Status**: Draft
+> **Status**: Complete
 
 ---
 
@@ -20,7 +20,7 @@ rest of the program will lean on earliest (Open → Save → New → Stream → 
 
 ## Task List
 
-- [ ] **Task 1: Project scaffolding and architecture tests**
+- [x] **Task 1: Project scaffolding and architecture tests**
   Create `src/Mked.Application/Mked.Application.csproj` referencing only `Mked.Domain`, and
   `tests/Mked.Application.Tests/Mked.Application.Tests.csproj` referencing the new
   application project plus the standard test stack (xUnit, AwesomeAssertions, Moq,
@@ -30,7 +30,7 @@ rest of the program will lean on earliest (Open → Save → New → Stream → 
   `Mked.Domain`. Done when the solution builds clean and the empty test project runs the
   four architecture assertions green.
 
-- [ ] **Task 2: OpenFileUseCase and OpenedFile**
+- [x] **Task 2: OpenFileUseCase and OpenedFile**
   Add `OpenedFile.cs` (sealed record carrying `Source` and `Parsed`) and `OpenFileUseCase.cs`
   in `src/Mked.Application/`. Implement `ExecuteAsync(string path)` as
   `IFileReader.ReadAsync(path).MapAsync(source => new OpenedFile(source, MarkdownDocument.Parse(source)))`.
@@ -40,7 +40,7 @@ rest of the program will lean on earliest (Open → Save → New → Stream → 
   Done when all tests pass and the architecture rules still hold.
   Depends on: Task 1
 
-- [ ] **Task 3: SaveFileUseCase**
+- [x] **Task 3: SaveFileUseCase**
   Add `SaveFileUseCase.cs` with `ExecuteAsync(string path, string content)`. Validate path
   via `string.IsNullOrWhiteSpace` → `ValidationError("path", "Path cannot be empty.")`;
   otherwise delegate to `IFileWriter.WriteAsync`. Add
@@ -50,14 +50,14 @@ rest of the program will lean on earliest (Open → Save → New → Stream → 
   with exact path/content, and `IoError` passthrough. Done when tests pass.
   Depends on: Task 1
 
-- [ ] **Task 4: NewDocumentUseCase**
+- [x] **Task 4: NewDocumentUseCase**
   Add `NewDocumentUseCase.cs` with infallible synchronous `Execute()` returning
   `new EditorState("")`. Add `Unit/NewDocumentUseCase_*.cs` asserting the returned state
   has empty buffer, `IsDirty == false`, cursor at `(1,1)`, `CanUndo == false`, and that two
   successive `Execute()` calls return distinct instances. Done when tests pass.
   Depends on: Task 1
 
-- [ ] **Task 5: StreamInputUseCase**
+- [x] **Task 5: StreamInputUseCase**
   Add `StreamInputUseCase.cs` with `ExecuteAsync(CancellationToken)` returning
   `IAsyncEnumerable<Result<MarkdownDocument, MkedError>>`. Maintain an internal
   `StringBuilder`; for each `Ok(chunk)` append the chunk plus `\n` and yield
@@ -68,7 +68,7 @@ rest of the program will lean on earliest (Open → Save → New → Stream → 
   losing earlier `Ok` items, and cancellation propagates. Done when tests pass.
   Depends on: Task 1
 
-- [ ] **Task 6: Renderer abstraction and RenderDocumentUseCase**
+- [x] **Task 6: Renderer abstraction and RenderDocumentUseCase**
   Add `RenderContext.cs` (sealed record with `ShowFrontmatter` and `PlainLinks`),
   `IMarkdownRenderer.cs` (generic `IMarkdownRenderer<TOutput>` with
   `Render(MarkdownDocument, RenderContext)`), and `RenderDocumentUseCase.cs` (generic

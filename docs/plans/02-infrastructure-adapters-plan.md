@@ -2,7 +2,7 @@
 
 > **Epic**: [`docs/epics/02-infrastructure-adapters.md`](../../docs/epics/02-infrastructure-adapters.md)
 > **Design**: [`docs/designs/02-infrastructure-adapters-design.md`](../../docs/designs/02-infrastructure-adapters-design.md)
-> **Status**: Draft
+> **Status**: Complete
 
 ---
 
@@ -17,14 +17,14 @@ have real types to check against.
 
 ## Task List
 
-- [ ] **Task 1: Project scaffold**
+- [x] **Task 1: Project scaffold**
   Create `Mked.Infrastructure` (class library, references `Mked.Domain`) and
   `Mked.Infrastructure.Tests` (xUnit test project, references `Mked.Infrastructure`). Add both
   to `mked.slnx`. Create `Unit/` and `Integration/` subfolders under `Mked.Infrastructure.Tests`
   and add a `.gitkeep` placeholder in each. "Done" means `dotnet build` and `dotnet test` both
   pass with zero errors and zero warnings on the new projects.
 
-- [ ] **Task 2: `FileSystemReader`**
+- [x] **Task 2: `FileSystemReader`**
   Implement `FileSystemReader` in `Mked.Infrastructure` — `IFileReader` backed by
   `File.ReadAllTextAsync(path, Encoding.UTF8)`, mapping `FileNotFoundException`,
   `UnauthorizedAccessException`, and `IOException` to `MkedError.IoError`. Write integration
@@ -34,7 +34,7 @@ have real types to check against.
   carry `[Trait("Category", "Integration")]`.
   Depends on: Task 1
 
-- [ ] **Task 3: `FileSystemWriter`**
+- [x] **Task 3: `FileSystemWriter`**
   Implement `FileSystemWriter` in `Mked.Infrastructure` — `IFileWriter` with atomic write
   semantics: derive target directory, call `Directory.CreateDirectory`, write to a GUID-named
   temp file in that directory, then `File.Move(temp, path, overwrite: true)`. On failure,
@@ -44,7 +44,7 @@ have real types to check against.
   behind in any outcome.
   Depends on: Task 1
 
-- [ ] **Task 4: `StdinInputReader`**
+- [x] **Task 4: `StdinInputReader`**
   Implement `StdinInputReader` in `Mked.Infrastructure` — `IInputReader` that accepts a
   `TextReader` (defaults to `Console.In`) and an `isRedirected` flag (defaults to
   `Console.IsInputRedirected`). When not redirected, `ReadChunksAsync` completes immediately
@@ -54,7 +54,7 @@ have real types to check against.
   that throws `IOException`. No `[Trait]` on unit test classes.
   Depends on: Task 1
 
-- [ ] **Task 5: `FileWatcherAdapter`**
+- [x] **Task 5: `FileWatcherAdapter`**
   Add `IFileWatcher` to `Mked.Domain` (`IAsyncEnumerable<string> WatchAsync(CancellationToken)`
   plus `IDisposable`). Implement `FileWatcherAdapter` in `Mked.Infrastructure`: constructor
   creates a `FileSystemWatcher` on the file's directory filtered by file name and a bounded
@@ -65,7 +65,7 @@ have real types to check against.
   single notification, disposal stops further notifications.
   Depends on: Task 1
 
-- [ ] **Task 6: Architecture tests**
+- [x] **Task 6: Architecture tests**
   Add an `ArchitectureTests.cs` (no trait) to `Mked.Infrastructure.Tests` using ArchUnitNet.
   Assert that no type in `Mked.Infrastructure` references `Mked.Application` or `Mked.Console`,
   and that `Mked.Infrastructure` references `Mked.Domain` (positive assertion). All rules must
