@@ -59,7 +59,7 @@ public sealed record class MarkdownViewer(string Markdown) : IRenderable
     /// <inheritdoc/>
     public IEnumerable<Segment> Render(RenderOptions options, int maxWidth)
     {
-        var (lines, scrollInfo) = _state.EnsureCache(this, options, maxWidth);
+        var (lines, _) = _state.EnsureCache(this, options, maxWidth);
 
         int maxStart = ViewportHeight.HasValue
             ? Math.Max(0, lines.Count - ViewportHeight.Value)

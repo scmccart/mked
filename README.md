@@ -35,8 +35,8 @@ mked view <path> [options]
 | `k` / `↑` | Scroll up one line |
 | `Shift+j` / `Shift+↓` | Scroll down one block |
 | `Shift+k` / `Shift+↑` | Scroll up one block |
-| `PageDown` / `Ctrl+D` | Scroll down a quarter page |
-| `PageUp` / `Ctrl+U` | Scroll up a quarter page |
+| `PageDown` / `Ctrl+D` | Scroll down half a page |
+| `PageUp` / `Ctrl+U` | Scroll up half a page |
 | `g` | Jump to top |
 | `G` | Jump to bottom |
 | `q` / `Ctrl+C` | Quit |
