@@ -61,4 +61,10 @@ public class MarkdownDocument_Parse_Tests
 
         doc.Frontmatter.IsNone.Should().BeTrue();
     }
+
+    [Fact]
+    public void Parse_StoresOriginalSource()
+    {
+        MarkdownDocument.Parse("# Hello").Source.Should().Be("# Hello");
+    }
 }

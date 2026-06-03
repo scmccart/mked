@@ -10,10 +10,10 @@ public sealed class StreamInputUseCase(IInputReader reader)
 {
     /// <summary>
     /// Accumulates chunks from <see cref="IInputReader"/> and yields a new
-    /// <see cref="MarkdownDocument"/> for each successful chunk. Reader errors are yielded
+    /// <see cref="StreamedDocument"/> for each successful chunk. Reader errors are yielded
     /// as-is. The enumeration completes on clean EOF.
     /// </summary>
-    public async IAsyncEnumerable<Result<MarkdownDocument, MkedError>> ExecuteAsync(
+    public async IAsyncEnumerable<Result<StreamedDocument, MkedError>> ExecuteAsync(
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var buffer = new StringBuilder();
@@ -25,12 +25,13 @@ public sealed class StreamInputUseCase(IInputReader reader)
             if (chunk is Result<string, MkedError>.Ok(var text))
             {
                 buffer.AppendLine(text);
-                yield return Result.Ok<MarkdownDocument, MkedError>(
-                    MarkdownDocument.Parse(buffer.ToString()));
+                var source = buffer.ToString();
+                yield return Result.Ok<StreamedDocument, MkedError>(
+                    new StreamedDocument(source, MarkdownDocument.Parse(source)));
             }
             else if (chunk is Result<string, MkedError>.Err(var error))
             {
-                yield return Result.Err<MarkdownDocument, MkedError>(error);
+                yield return Result.Err<StreamedDocument, MkedError>(error);
             }
         }
     }

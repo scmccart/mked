@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <PackageReference Include="Markdig" />
+    <PackageReference Include="Spectre.Console" />
+    <Using Include="Markdig" />
+    <Using Include="Markdig.Syntax" />
+    <Using Include="Spectre.Console" />
+    <Using Include="Spectre.Console.Rendering" />
+  </ItemGroup>
+</Project>

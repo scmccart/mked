@@ -29,19 +29,18 @@ Control whether YAML frontmatter is shown or silently stripped.
 
 ### Feature: Rendering Strategies
 
-Support multiple output backends so the viewer works in all terminal environments.
+Style output for the terminal environment. `mked view` is a TTY-only command; piped output is not supported.
 
-- As a user in a rich terminal, content is styled with colour and emphasis (`SpectreMarkdownRenderer`)
-- As a user piping output to a file or another tool, content is plain text with no ANSI codes (`PlainTextRenderer`)
-- As a user in a limited terminal, content uses only basic ANSI codes (`AnsiMarkdownRenderer`)
+- As a user, content is styled with colour and emphasis via `SpectreMarkdownRenderer`; colour depth degrades automatically on limited terminals
 - As a developer, `IMarkdownRenderer` is injected; switching strategy requires no change to the viewer widget
 
 ### Feature: Scrolling & Navigation
 
 Let the user navigate long documents without a mouse.
 
-- As a user, I can scroll down with `↓` or `j` and up with `↑` or `k`
-- As a user, `Page Down` / `Page Up` scroll by a full screen height
+- As a user, I can scroll down one line with `↓` or `j` and up one line with `↑` or `k`
+- As a user, `Shift+↓` or `Shift+J` jumps to the next block; `Shift+↑` or `Shift+K` jumps to the previous block
+- As a user, `Page Down` / `Ctrl+D` scroll down half a screen; `Page Up` / `Ctrl+U` scroll up half a screen
 - As a user, `g` jumps to the top of the document; `G` jumps to the bottom
 - As a user, pressing `q` or `Ctrl+C` exits the viewer cleanly
 
