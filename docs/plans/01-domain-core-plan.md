@@ -9,7 +9,7 @@
 ## Overview
 
 Tasks are sequenced foundation-first. The project scaffold lands first so every subsequent task
-has a compilable project to extend. The ROP primitives (`Result<T,E>`, `Option<T>`, `Unit`) come
+has a compilable project to extend. The ROP primitives (`Result<T,E>`, `Maybe<T>`, `Unit`) come
 next because the domain interfaces depend on them. `MkedError` and the value objects follow in
 parallel-safe order. Domain interfaces, `MarkdownDocument`, `EditorState`, and `ViewerState`
 layer on top once their dependencies are in place. Architecture tests close the epic by asserting
@@ -32,12 +32,12 @@ the dependency constraints hold across everything built.
   from `Directory.Packages.props`. Register both projects with `dotnet sln mked.slnx add`.
   `dotnet build` and `dotnet test` (zero tests) both pass cleanly.
 
-- [x] **Task 2: Result\<T,E\>, Option\<T\>, and Unit**
+- [x] **Task 2: Result\<T,E\>, Maybe\<T\>, and Unit**
   Implement `Result<T,E>` as an `abstract record` with sealed nested `Ok(T Value)` and
   `Err(E Error)` record cases, the static `Result` factory class, and all `ResultExtensions`:
   `Map`, `Bind`, `MapError`, `Match`, `Unwrap`, `UnwrapOr`, `BindAsync`, `MapAsync`. Implement
-  `Option<T>` as an `abstract record` with `Some(T Value)` and `None` cases and all
-  `OptionExtensions`: `Map`, `Bind`, `Match`, `UnwrapOr`, `OkOrErr`. Implement `Unit` as a
+  `Maybe<T>` as an `abstract record` with `Some(T Value)` and `None` cases and all
+  `MaybeExtensions`: `Map`, `Bind`, `Match`, `UnwrapOr`, `OkOrErr`. Implement `Unit` as a
   `readonly record struct`. Every combinator is covered by unit tests, including async variants
   exercised via `Task.FromResult`.
   Depends on: Task 1
@@ -59,7 +59,7 @@ the dependency constraints hold across everything built.
 
 - [x] **Task 5: Domain interfaces**
   Declare `IFileReader` (`Task<Result<string, MkedError>> ReadAsync(string path)`), `IFileWriter`
-  (`Task<Result<Unit, MkedError>> WriteAsync(string path, string content)`), and `IInputStream`
+  (`Task<Result<Unit, MkedError>> WriteAsync(string path, string content)`), and `IInputReader`
   (`IAsyncEnumerable<Result<string, MkedError>> ReadChunksAsync()`). These are interface
   declarations only — no implementations. XML doc comments on all members. The project builds
   without warnings.
@@ -70,7 +70,7 @@ the dependency constraints hold across everything built.
   The static `Parse(string source)` method builds a Markdig pipeline with standard extensions
   and the YAML front matter extension, throws `ArgumentNullException` for null input, and returns
   a `MarkdownDocument`. Expose `IsEmpty` (bool), `Blocks` (`IReadOnlyList<Markdig.Syntax.Block>`),
-  and `Frontmatter` (`Option<string>`). Unit tests cover: empty string → `IsEmpty` true; heading
+  and `Frontmatter` (`Maybe<string>`). Unit tests cover: empty string → `IsEmpty` true; heading
   input → correct block count; YAML front matter present → `Frontmatter` is `Some`; absent →
   `None`; null input → `ArgumentNullException`.
   Depends on: Task 2
