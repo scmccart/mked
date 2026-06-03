@@ -15,14 +15,14 @@ mked performs many operations that can fail in predictable, non-exceptional ways
 
 ## The Result Type
 
-mked uses hand-rolled `Result<T,E>` and `Option<T>` types (see [`result-types.md`](result-types.md)) rather than a library dependency.
+mked uses hand-rolled `Result<T,E>` and `Maybe<T>` types (see [`result-types.md`](result-types.md)) rather than a library dependency.
 
 ```csharp
 Result<MarkdownDocument, MkedError> result = await openFile.ExecuteAsync(path);
 
 result.Match(
-    onSuccess: doc => viewer.Render(doc),
-    onFailure: err => console.WriteError(err.Message)
+    onOk: doc => viewer.Render(doc),
+    onErr: err => console.WriteError(err.Message)
 );
 ```
 
