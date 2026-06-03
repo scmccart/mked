@@ -4,7 +4,7 @@ Feature delivery epics for mked, ordered by build dependency (innermost layers f
 
 | # | Epic | Features | Summary |
 |---|---|---|---|
-| 01 | [Domain Core](01-domain-core.md) | Result & Option Types · Error Types · Markdown Document Model · Editor State · Viewer State · Value Objects · Domain Interfaces | Primitive types, entities, value objects, and I/O interfaces |
+| 01 | [Domain Core](01-domain-core.md) | Result & Maybe Types · Error Types · Markdown Document Model · Editor State · Viewer State · Value Objects · Domain Interfaces | Primitive types, entities, value objects, and I/O interfaces |
 | 02 | [Infrastructure Adapters](02-infrastructure-adapters.md) | File System Adapters · Standard Input Stream · File Watcher | OS-facing implementations of domain interfaces |
 | 03 | [Application Use Cases](03-application-use-cases.md) | Open File · Save File · Stream Input · New Document · Render Document | Named, testable use cases — no direct I/O |
 | 04 | [Markdown Viewer](04-markdown-viewer.md) | Static Document Rendering · Frontmatter Handling · Rendering Strategies · Scrolling & Navigation · Viewport Stability · Streaming & Tail Mode | Rich read-only terminal document display |

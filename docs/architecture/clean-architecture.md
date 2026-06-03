@@ -30,8 +30,8 @@ The innermost layer. Contains:
 
 - **Entities** — `EditorState`, `ViewerState`, `MarkdownDocument` wrapper.
 - **Value objects** — `CursorPosition`, `TextRange`, `ViewportAnchor`.
-- **Interfaces** — `IFileReader`, `IFileWriter`, `IInputStream` — defined here, implemented in Infrastructure.
-- **Result types** — `Result<T,E>` and `Option<T>` (see [`result-types.md`](result-types.md)).
+- **Interfaces** — `IFileReader`, `IFileWriter`, `IInputReader` — defined here, implemented in Infrastructure.
+- **Result types** — `Result<T,E>` and `Maybe<T>` (see [`result-types.md`](result-types.md)).
 
 No dependencies on NuGet packages except the .NET BCL. AOT-safe by construction.
 
@@ -41,7 +41,7 @@ Orchestrates use cases by composing Domain objects with injected interfaces:
 
 - `OpenFileUseCase` — reads a file via `IFileReader`, parses via Markdig, returns a `MarkdownDocument`.
 - `SaveFileUseCase` — writes editor buffer to disk via `IFileWriter`.
-- `StreamInputUseCase` — reads from `IInputStream`, emits incremental `MarkdownDocument` updates.
+- `StreamInputUseCase` — reads from `IInputReader`, emits incremental `MarkdownDocument` updates.
 
 Returns `Result<T,E>` for all operations that can fail. No direct I/O; no Spectre.Console references.
 
@@ -50,7 +50,7 @@ Returns `Result<T,E>` for all operations that can fail. No direct I/O; no Spectr
 Implements Domain interfaces against the real OS:
 
 - `FileSystemReader` / `FileSystemWriter` — wraps `System.IO`.
-- `StdinInputStream` — wraps `Console.In` / `Console.OpenStandardInput()`.
+- `StdinInputReader` — wraps `Console.In` / `Console.OpenStandardInput()`.
 - `FileWatcherAdapter` — wraps `FileSystemWatcher` for `--follow` mode.
 
 AOT compatibility: avoid reflection-based serialisation; use `System.IO` directly.
