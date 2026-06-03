@@ -29,4 +29,12 @@ public class ViewerState_Construction_Tests
 
         state.IsFollowing.Should().BeFalse();
     }
+
+    [Fact]
+    public void NullDocument_ThrowsArgumentNullException()
+    {
+        Action act = () => { _ = new ViewerState(null!); };
+
+        act.Should().Throw<ArgumentNullException>();
+    }
 }

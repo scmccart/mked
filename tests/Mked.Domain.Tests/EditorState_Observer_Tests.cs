@@ -74,4 +74,13 @@ public class EditorState_Observer_Tests
 
         spy.BufferCallCount.Should().Be(0);
     }
+
+    [Fact]
+    public void Subscribe_NullObserver_ThrowsArgumentNullException()
+    {
+        var state = new EditorState(string.Empty);
+        Action act = () => state.Subscribe(null!);
+
+        act.Should().Throw<ArgumentNullException>();
+    }
 }

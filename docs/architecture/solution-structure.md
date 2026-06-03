@@ -4,7 +4,7 @@
 
 ```
 mked/
-├── mked.slnx
+├── mked.sln
 ├── src/
 │   ├── Mked.Domain/
 │   │   └── Mked.Domain.csproj
@@ -31,7 +31,7 @@ mked/
 
 ### Mked.Domain
 
-The core domain layer. Contains entities, value objects, domain interfaces, `Result<T,E>`, and `Maybe<T>`.
+The core domain layer. Contains entities, value objects, domain interfaces, `Result<T,E>`, and `Option<T>`.
 
 - **Output type**: class library (not shipped independently)
 - **NuGet dependencies**: Markdig (AST types used in domain model)
@@ -87,7 +87,7 @@ Each `src/` project except `Mked.Console` has a corresponding test project under
 
 | Test project | Scope |
 |---|---|
-| `Mked.Domain.Tests` | Value objects, `Result`/`Maybe` logic, pure domain rules |
+| `Mked.Domain.Tests` | Value objects, `Result`/`Option` logic, pure domain rules |
 | `Mked.Application.Tests` | Use cases with in-memory fakes of domain interfaces |
 | `Mked.Infrastructure.Tests` | Adapter behaviour against a temp directory or in-memory stream |
 | `Mked.Controls.Tests` | Widget state transitions, render output, keyboard input handling |

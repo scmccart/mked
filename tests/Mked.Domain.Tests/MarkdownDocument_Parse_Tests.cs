@@ -61,4 +61,14 @@ public class MarkdownDocument_Parse_Tests
 
         doc.Frontmatter.IsNone.Should().BeTrue();
     }
+
+    [Fact]
+    public void YamlNotFirstBlock_FrontmatterIsNone()
+    {
+        // YAML delimiters after a heading are not treated as front matter
+        var source = "# Heading\n\n---\ntitle: Test\n---";
+        var doc = MarkdownDocument.Parse(source);
+
+        doc.Frontmatter.IsNone.Should().BeTrue();
+    }
 }

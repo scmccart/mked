@@ -86,7 +86,7 @@ mockWatcher.Verify(w => w.Watch("/tmp/test.md"), Times.Once);
 
 | Layer | What to test | What not to test |
 |---|---|---|
-| Domain | Value objects, `Result`/`Maybe` combinators, domain invariants | Anything touching I/O |
+| Domain | Value objects, `Result`/`Option` combinators, domain invariants | Anything touching I/O |
 | Application | Use cases in isolation via fakes of domain interfaces | File system, terminal |
 | Infrastructure | Adapter behaviour against a real temp directory or `MemoryStream` | Domain logic already covered |
 | Controls | Widget state transitions, render output for given input, key event handling | Actual ANSI terminal output |

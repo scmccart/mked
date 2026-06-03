@@ -37,4 +37,13 @@ public class EditorState_UpdateBuffer_Tests
 
         state.CanRedo.Should().BeFalse();
     }
+
+    [Fact]
+    public void NullNewBuffer_ThrowsArgumentNullException()
+    {
+        var state = new EditorState("original");
+        Action act = () => state.UpdateBuffer(null!);
+
+        act.Should().Throw<ArgumentNullException>();
+    }
 }

@@ -28,6 +28,21 @@ public sealed class SaveFileUseCase_Tests
     }
 
     [Fact]
+    public async Task NullPath_ReturnsValidationError_WithoutCallingWriter()
+    {
+        // Act
+        var result = await _sut.ExecuteAsync(null!, "content");
+
+        // Assert
+        var err = result as Result<Unit, MkedError>.Err;
+        err.Should().NotBeNull();
+        err!.Error.Should().BeOfType<MkedError.ValidationError>();
+        var ve = (MkedError.ValidationError)err.Error;
+        ve.Field.Should().Be("path");
+        _writer.Writes.Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task ValidPath_CallsWriterWithExactArguments()
     {
         // Act
