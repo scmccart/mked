@@ -25,6 +25,7 @@ public sealed class EditorState
     private readonly List<IEditorObserver> _observers = [];
     private readonly Stack<IEditorCommand> _undoStack = new();
     private readonly Stack<IEditorCommand> _redoStack = new();
+    private bool _isDirty;
 
     /// <summary>Creates an <see cref="EditorState"/> with the given initial buffer.</summary>
     public EditorState(string initialBuffer)
@@ -43,8 +44,9 @@ public sealed class EditorState
 
     /// <summary>
     /// Returns <see langword="true"/> when the buffer differs from its initial value.
+    /// Cached to avoid O(n) string comparison on every access.
     /// </summary>
-    public bool IsDirty => Buffer != _initialBuffer;
+    public bool IsDirty => _isDirty;
 
     /// <summary>Returns <see langword="true"/> when <c>Undo</c> can be called.</summary>
     public bool CanUndo => _undoStack.Count > 0;
@@ -80,7 +82,11 @@ public sealed class EditorState
             observer.OnCursorMoved(Cursor);
     }
 
-    private void SetBufferInternal(string buffer) => Buffer = buffer;
+    private void SetBufferInternal(string buffer)
+    {
+        Buffer = buffer;
+        _isDirty = buffer != _initialBuffer;
+    }
 
     private void SetCursorInternal(CursorPosition position) => Cursor = position;
 }
