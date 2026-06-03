@@ -38,8 +38,9 @@ Style output for the terminal environment. `mked view` is a TTY-only command; pi
 
 Let the user navigate long documents without a mouse.
 
-- As a user, I can scroll down with `↓` or `j` and up with `↑` or `k`
-- As a user, `Page Down` / `Page Up` scroll by a full screen height
+- As a user, I can scroll down one line with `↓` or `j` and up one line with `↑` or `k`
+- As a user, `Shift+↓` or `Shift+J` jumps to the next block; `Shift+↑` or `Shift+K` jumps to the previous block
+- As a user, `Page Down` / `Ctrl+D` scroll down half a screen; `Page Up` / `Ctrl+U` scroll up half a screen
 - As a user, `g` jumps to the top of the document; `G` jumps to the bottom
 - As a user, pressing `q` or `Ctrl+C` exits the viewer cleanly
 

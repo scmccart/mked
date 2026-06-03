@@ -25,10 +25,10 @@ public sealed record class MarkdownViewer(string Markdown) : IRenderable
     public bool PlainLinks { get; init; }
 
     /// <summary>
-    /// 0-based index of the first top-level block to display.
-    /// Defaults to 0 (document top). Clamped to [0, <see cref="BlockCount"/> - 1].
+    /// 0-based index of the first terminal line to display.
+    /// Defaults to 0 (document top). Clamped to [0, <see cref="MarkdownViewerScrollInfo.TotalLineCount"/> - <see cref="ViewportHeight"/>].
     /// </summary>
-    public int TopBlockIndex { get; init; }
+    public int TopLineIndex { get; init; }
 
     /// <summary>
     /// Maximum number of terminal rows to render.
@@ -61,12 +61,10 @@ public sealed record class MarkdownViewer(string Markdown) : IRenderable
     {
         var (lines, scrollInfo) = _state.EnsureCache(this, options, maxWidth);
 
-        int startLine = 0;
-        if (scrollInfo.BlockStartLines.Count > 0)
-        {
-            int idx = Math.Clamp(TopBlockIndex, 0, scrollInfo.BlockStartLines.Count - 1);
-            startLine = scrollInfo.BlockStartLines[idx];
-        }
+        int maxStart = ViewportHeight.HasValue
+            ? Math.Max(0, lines.Count - ViewportHeight.Value)
+            : Math.Max(0, lines.Count - 1);
+        int startLine = Math.Clamp(TopLineIndex, 0, maxStart);
 
         int endLine = ViewportHeight.HasValue
             ? Math.Min(startLine + ViewportHeight.Value, lines.Count)

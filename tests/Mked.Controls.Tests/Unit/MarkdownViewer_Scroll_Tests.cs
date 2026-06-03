@@ -43,16 +43,24 @@ public sealed class MarkdownViewer_Scroll_Tests
     // ─── Scroll / clip ────────────────────────────────────────────────────────
 
     [Fact]
-    public void TopBlockIndex1_FirstBlockTextAbsent()
+    public void TopLineIndex_AtBlock1Start_FirstBlockTextAbsent()
     {
-        var viewer = new MarkdownViewer(ThreeBlockDoc) { TopBlockIndex = 1, ViewportHeight = 5 };
+        var baseViewer = new MarkdownViewer(ThreeBlockDoc);
+        GetSegments(baseViewer); // populate cache
+        int block1Line = baseViewer.ScrollInfo.BlockStartLines[1];
+
+        var viewer = baseViewer with { TopLineIndex = block1Line, ViewportHeight = 5 };
         Write(viewer).Should().NotContain("Heading");
     }
 
     [Fact]
-    public void TopBlockIndex1_SecondBlockTextPresent()
+    public void TopLineIndex_AtBlock1Start_SecondBlockTextPresent()
     {
-        var viewer = new MarkdownViewer(ThreeBlockDoc) { TopBlockIndex = 1, ViewportHeight = 5 };
+        var baseViewer = new MarkdownViewer(ThreeBlockDoc);
+        GetSegments(baseViewer); // populate cache
+        int block1Line = baseViewer.ScrollInfo.BlockStartLines[1];
+
+        var viewer = baseViewer with { TopLineIndex = block1Line, ViewportHeight = 5 };
         Write(viewer).Should().Contain("Paragraph one");
     }
 
@@ -71,19 +79,21 @@ public sealed class MarkdownViewer_Scroll_Tests
     public void WithCopy_SharesSameScrollInfoReference()
     {
         var viewer = new MarkdownViewer(ThreeBlockDoc);
-        // Trigger cache computation
-        GetSegments(viewer);
+        GetSegments(viewer); // populate cache
 
-        var viewer2 = viewer with { TopBlockIndex = 1 };
+        var viewer2 = viewer with { TopLineIndex = 1 };
 
         ReferenceEquals(viewer.ScrollInfo, viewer2.ScrollInfo).Should().BeTrue();
     }
 
     [Fact]
-    public void WithCopy_DifferentTopBlockIndex_ShowsDifferentContent()
+    public void WithCopy_DifferentTopLineIndex_ShowsDifferentContent()
     {
-        var viewer0 = new MarkdownViewer(ThreeBlockDoc) { TopBlockIndex = 0, ViewportHeight = 3 };
-        var viewer1 = viewer0 with { TopBlockIndex = 1 };
+        var viewer0 = new MarkdownViewer(ThreeBlockDoc) { TopLineIndex = 0, ViewportHeight = 3 };
+        GetSegments(viewer0); // populate cache
+        int block1Line = viewer0.ScrollInfo.BlockStartLines[1];
+
+        var viewer1 = viewer0 with { TopLineIndex = block1Line };
 
         Write(viewer0).Should().Contain("Heading");
         Write(viewer1).Should().NotContain("Heading");

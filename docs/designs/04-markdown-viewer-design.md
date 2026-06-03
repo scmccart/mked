@@ -118,10 +118,10 @@ public sealed record class MarkdownViewer(string Markdown) : IRenderable
     public bool PlainLinks { get; init; }
 
     /// <summary>
-    /// 0-based index of the first top-level block to display.
-    /// Defaults to 0 (document top). Clamped to [0, BlockCount - 1].
+    /// 0-based index of the first terminal line to display.
+    /// Defaults to 0 (document top). Clamped to [0, TotalLineCount - ViewportHeight].
     /// </summary>
-    public int TopBlockIndex { get; init; }
+    public int TopLineIndex { get; init; }
 
     /// <summary>
     /// Maximum number of terminal rows to render.
@@ -134,8 +134,7 @@ public sealed record class MarkdownViewer(string Markdown) : IRenderable
 
     /// <summary>
     /// Scroll metadata: total rendered line count and the first line index of each block.
-    /// Computed lazily at the width first passed to <see cref="Render"/> or <see cref="Measure"/>.
-    /// Width-dependent; create a new instance when terminal width changes.
+    /// Recomputed whenever the cache key (maxWidth, ShowFrontmatter, PlainLinks) changes.
     /// </summary>
     public MarkdownViewerScrollInfo ScrollInfo { get; }
 
@@ -146,11 +145,11 @@ public sealed record class MarkdownViewer(string Markdown) : IRenderable
 ```
 
 `MarkdownViewer` parses `Markdown` with Markdig (using `UseAdvancedExtensions().UseYamlFrontMatter()`)
-and caches the full `List<SegmentLine>` and `MarkdownViewerScrollInfo` in a
-`Lazy<(List<SegmentLine>, MarkdownViewerScrollInfo)>` field on first `Render` / `Measure` call.
-Because `MarkdownViewer` is a record, `with`-expression copies share the same `Lazy<>` reference
-when only `TopBlockIndex` or `ViewportHeight` changes — the cached lines are reused, and `Render`
-simply emits the appropriate slice.
+and caches the full `List<SegmentLine>` and `MarkdownViewerScrollInfo` in a `RenderStateHolder`
+keyed on `(maxWidth, ShowFrontmatter, PlainLinks)`. Because `MarkdownViewer` is a record,
+`with`-expression copies share the same `RenderStateHolder` reference when only `TopLineIndex`
+or `ViewportHeight` changes — the cached lines are reused, and `Render` simply emits the
+appropriate slice starting at `TopLineIndex`.
 
 ---
 
@@ -198,7 +197,7 @@ viewer to `ctx.UpdateTarget`:
 ```csharp
 await foreach (var baseViewer in renderer.Stream(docStream, ct))
 {
-    var viewer = baseViewer with { TopBlockIndex = currentTopBlock, ViewportHeight = H };
+    var viewer = baseViewer with { TopLineIndex = currentLine, ViewportHeight = H };
     ctx.UpdateTarget(viewer);
 }
 ```
@@ -251,41 +250,30 @@ Spectre.Console degrades colour tags automatically when the terminal reports lim
 4. Starts `AnsiConsole.Live(initialViewer).StartAsync(async ctx => { ... })`:
 
 ```
-// Two concurrent tasks inside the LiveDisplay callback:
+// Poll loop inside the LiveDisplay callback:
 
-// Task A — keyboard input
 loop:
-  key = await console.Input.ReadKeyAsync(intercept: true, ct)
-  match key:
-    ↓ / j       → topLine += 1
-    ↑ / k       → topLine -= 1
-    PageDown    → topLine += H
-    PageUp      → topLine -= H
-    g           → topLine = 0
-    G           → topLine = scrollInfo.TotalLineCount - H
-    q / Ctrl+C  → cancel and break
-  clamp topLine to [0, max(0, TotalLineCount - H)]
-  currentBlock = BlockIndexForLine(scrollInfo, topLine)
-  viewerState.SetAnchor(new ViewportAnchor(currentBlock))
-  ctx.UpdateTarget(currentViewer with { TopBlockIndex = currentBlock })
+  if key available:
+    match key:
+      ↓ / j (no modifier)       → currentLine += 1
+      ↑ / k (no modifier)       → currentLine -= 1
+      Shift+↓ / Shift+J         → currentLine = next BlockStartLines entry > currentLine
+      Shift+↑ / Shift+K         → currentLine = last BlockStartLines entry < currentLine
+      PageDown / Ctrl+D         → currentLine += H/2
+      PageUp   / Ctrl+U         → currentLine -= H/2
+      g                         → currentLine = 0
+      G                         → currentLine = max(0, TotalLineCount - H)
+      q / Ctrl+C                → cancel and break
+    clamp currentLine to [0, max(0, TotalLineCount - H)]
 
-// Task B — resize polling (fires every ~1 second via PeriodicTimer)
-loop:
-  await periodicTimer.WaitForNextTickAsync(ct)
-  if console.Profile.Width != prevWidth || console.Profile.Height != prevHeight:
-      H = console.Profile.Height
-      prevWidth = console.Profile.Width
-      // Re-create viewer with new dimensions; reuse cached segments if width unchanged
-      currentViewer = new MarkdownViewer(source) { … }
-      topLine = currentViewer.ScrollInfo.BlockStartLines[currentBlock]
-      ctx.UpdateTarget(currentViewer with { TopBlockIndex = currentBlock, ViewportHeight = H })
+  if resize detected:
+    H = new height
+    rebuild baseViewer (new RenderStateHolder, busts width cache)
 
-await Task.WhenAny(keyTask, resizeTask)
-linkedCts.Cancel()
+  if dirty:
+    viewer = baseViewer with { TopLineIndex = currentLine, ViewportHeight = H }
+    ctx.UpdateTarget(viewer)
 ```
-
-`BlockIndexForLine(scrollInfo, line)` is a binary search on `scrollInfo.BlockStartLines` returning
-the largest index `i` where `BlockStartLines[i] <= line`.
 
 ### Use Case: Follow Mode (`mked view --follow file.md`)
 
@@ -317,10 +305,9 @@ await AnsiConsole.Live(initialViewer).StartAsync(async ctx =>
     {
         await foreach (var baseViewer in viewerStream)
         {
-            // Re-apply current scroll anchor after reload
-            currentViewer = baseViewer;
-            topLine = currentViewer.ScrollInfo.BlockStartLines[currentBlock];
-            ctx.UpdateTarget(currentViewer with { TopBlockIndex = currentBlock, ViewportHeight = H });
+            // Preserve currentLine across reload; Render clamps to new document bounds
+            viewer = baseViewer with { TopLineIndex = currentLine, ViewportHeight = H };
+            ctx.UpdateTarget(viewer);
         }
     }, ct);
 
@@ -329,9 +316,8 @@ await AnsiConsole.Live(initialViewer).StartAsync(async ctx =>
 });
 ```
 
-On reload, the viewport anchor (`currentBlock`) is preserved; `topLine` is recomputed from the
-new `ScrollInfo.BlockStartLines` so the user stays at the same logical position even if earlier
-blocks changed line count.
+On reload, `currentLine` is preserved; `MarkdownViewer.Render` clamps it to the new document's
+valid range so the user stays as close to their previous position as possible.
 
 ### Use Case: Stream Mode (`mked view --stream`)
 
@@ -341,18 +327,17 @@ Stream mode is structurally identical to follow mode but the source is `StreamIn
 var docStream    = streamInputUseCase.ExecuteAsync(ct);   // IAsyncEnumerable<Result<StreamedDocument, MkedError>>
 var viewerStream = renderer.Stream(docStream, ct);         // IAsyncEnumerable<MarkdownViewer>
 
-// ViewCommand sets viewerState.IsFollowing = true so the anchor auto-advances
-// to the last block as new content arrives.
+// On each new chunk, tail-follow to the bottom by setting currentLine = int.MaxValue;
+// Render clamps this to max(0, TotalLineCount - H) automatically.
 await AnsiConsole.Live(initialViewer).StartAsync(async ctx =>
 {
     var streamTask = Task.Run(async () =>
     {
-        await foreach (var baseViewer in viewerStream)
+        await foreach (var incoming in viewerStream)
         {
-            // Follow mode: anchor at bottom
-            currentBlock = baseViewer.BlockCount > 0 ? baseViewer.BlockCount - 1 : 0;
-            topLine = baseViewer.ScrollInfo.BlockStartLines[currentBlock];
-            ctx.UpdateTarget(baseViewer with { TopBlockIndex = currentBlock, ViewportHeight = H });
+            currentLine = int.MaxValue; // Render clamps to last visible line
+            viewer = incoming with { TopLineIndex = currentLine, ViewportHeight = H };
+            ctx.UpdateTarget(viewer);
         }
     }, ct);
 
@@ -376,12 +361,11 @@ public sealed record MarkdownViewerScrollInfo(
     IReadOnlyList<int> BlockStartLines);   // index i → first rendered line of block i
 ```
 
-`MarkdownViewer` builds this by rendering the full document at the `maxWidth` supplied to the
-first `Render` / `Measure` call, tracking the `SegmentLine` offset at which each top-level block
-starts. The metadata is `maxWidth`-dependent. When the terminal is resized, a new `MarkdownViewer`
-instance is created (via the resize polling task), triggering a fresh render pass and new metadata.
-The current `currentBlock` index is then mapped to the new `topLine` via the new
-`ScrollInfo.BlockStartLines`, preserving the anchor with the new layout.
+`MarkdownViewer` builds this on the first `Render` / `Measure` call, tracking the `SegmentLine`
+offset at which each top-level block starts. The metadata is keyed on `(maxWidth, ShowFrontmatter,
+PlainLinks)` and is recomputed automatically when any of those change. On terminal resize,
+`ViewCommand` rebuilds the base viewer (clearing the cache); `currentLine` is preserved and
+`Render` clamps it to the new document's valid range.
 
 ---
 
@@ -448,9 +432,9 @@ Specific scenarios:
 - **Horizontal rule**: full-width rule in dim style.
 - **Frontmatter (default)**: YAML block absent from output.
 - **Frontmatter (`ShowFrontmatter = true`)**: raw YAML present as dim monospace block.
-- **Scroll / clip**: `TopBlockIndex = 1, ViewportHeight = 5` on a 3-block document — first
-  block's text absent from output; blocks 1 and 2 present.
-- **`with`-expression scroll**: `viewer with { TopBlockIndex = 2 }` shares cached segments;
+- **Scroll / clip**: `TopLineIndex = BlockStartLines[1], ViewportHeight = 5` on a 3-block document
+  — first block's text absent from output; blocks 1 and 2 present.
+- **`with`-expression scroll**: `viewer with { TopLineIndex = 1 }` shares cached segments;
   `ScrollInfo` reference is identical to the original instance's.
 - **`ScrollInfo` accuracy**: `BlockStartLines[0] == 0`; `BlockStartLines[i] ==
   BlockStartLines[i-1] + lineCountOfBlock(i-1)` for all `i`.

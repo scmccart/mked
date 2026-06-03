@@ -42,11 +42,12 @@ when the project builds cleanly with zero warnings.
 ## Task 4 — Implement `MarkdownViewer`
 
 Implement `MarkdownViewer(string Markdown) : IRenderable` as a `sealed record class` in
-`Mked.Controls` with `init` properties `ShowFrontmatter`, `PlainLinks`, `TopBlockIndex`, and
-`ViewportHeight`. On first `Measure` or `Render` call, delegate to `MarkdownBlockRenderer`,
-store the result and `MarkdownViewerScrollInfo` in a `Lazy<>` field, and clip the emitted
-`Segment` sequence to the `ViewportHeight` window starting at `TopBlockIndex`. Because
-`MarkdownViewer` is a record, `with`-expression copies share the same `Lazy<>` reference when
+`Mked.Controls` with `init` properties `ShowFrontmatter`, `PlainLinks`, `TopLineIndex`, and
+`ViewportHeight`. On first `Measure` or `Render` call (or when the cache key changes), delegate
+to `MarkdownBlockRenderer`, store the result and `MarkdownViewerScrollInfo` in a
+`RenderStateHolder` keyed on `(maxWidth, ShowFrontmatter, PlainLinks)`, and clip the emitted
+`Segment` sequence to the `ViewportHeight` window starting at `TopLineIndex`. Because
+`MarkdownViewer` is a record, `with`-expression copies share the same `RenderStateHolder` when
 only scroll properties change. `BlockCount` and `ScrollInfo` are derived from the cached data.
 Done when a `MarkdownViewer` instance can be written to a `TestConsole` and its segment
 sequence queried in isolation.
@@ -90,16 +91,19 @@ Depends on: Task 1, Task 2, Task 4
 ## Task 7 — `ViewSettings`, `ViewCommand`, and interactive file viewing
 
 Implement `ViewSettings` (`CommandSettings` with `[path]` argument and `--stream`, `--follow`,
-`--show-frontmatter`, `--plain` options; annotate with `[DynamicDependency]` for AOT safety).
-Implement `ViewCommand.ExecuteAsync` for the interactive file-viewing mode: call
+`--show-frontmatter`, `--plain` options; annotate with `[DynamicallyAccessedMembers(All)]` for
+AOT safety). Implement `ViewCommand.ExecuteAsync` for the interactive file-viewing mode: call
 `OpenFileUseCase.ExecuteAsync`, on error write `[red bold]Error:[/] [red]{message}[/]` and
-return exit code 1; on success enter a `LiveDisplay` loop with two concurrent tasks — a
-keyboard-input loop handling ↓/j, ↑/k, Page Down, Page Up, g, G, q/Ctrl+C and a 1 Hz
-`PeriodicTimer` resize-polling task that re-creates `MarkdownViewer` with updated dimensions
-and re-seeks the anchor via `ScrollInfo.BlockStartLines`. Add a minimal `Program.cs` that
-registers `ViewCommand` in a `CommandApp`. Done when `mked view file.md` opens a file,
-navigates correctly with all key bindings, preserves the viewport anchor on terminal resize,
-and exits cleanly.
+return exit code 1; on success enter a `LiveDisplay` poll loop handling:
+- ↓/j — scroll down one line; ↑/k — scroll up one line
+- Shift+↓/Shift+J — jump to next block; Shift+↑/Shift+K — jump to previous block
+- Page Down/Ctrl+D — scroll down half a screen; Page Up/Ctrl+U — scroll up half a screen
+- g — jump to top; G — jump to bottom; q/Ctrl+C — exit
+
+On resize, rebuild the base viewer (clears width-dependent cache); `currentLine` is preserved
+and `Render` clamps it to the new document bounds. Add a minimal `Program.cs` that registers
+`ViewCommand` in a `CommandApp`. Done when `mked view file.md` opens a file, navigates
+correctly with all key bindings, preserves scroll position on terminal resize, and exits cleanly.
 
 Depends on: Task 6
 

@@ -40,9 +40,9 @@ public sealed class ViewCommand : AsyncCommand<ViewSettings>
         }
 
         int h = AnsiConsole.Profile.Height;
-        int currentBlock = 0;
+        int currentLine = 0;
         var baseViewer = BuildViewer(file.Source, settings);
-        var viewer = baseViewer with { TopBlockIndex = 0, ViewportHeight = h };
+        var viewer = baseViewer with { TopLineIndex = 0, ViewportHeight = h };
 
         using var cts = new CancellationTokenSource();
 
@@ -61,41 +61,60 @@ public sealed class ViewCommand : AsyncCommand<ViewSettings>
                     if (System.Console.KeyAvailable)
                     {
                         var key = System.Console.ReadKey(intercept: true);
-                        int maxBlock = Math.Max(0, viewer.BlockCount - 1);
+                        var scrollInfo = viewer.ScrollInfo;
+                        int maxLine = Math.Max(0, scrollInfo.TotalLineCount - h);
 
                         switch (key.Key)
                         {
-                            case ConsoleKey.DownArrow:
+                            case ConsoleKey.DownArrow when key.Modifiers == 0:
                             case ConsoleKey.J when key.Modifiers == 0:
-                                currentBlock = Math.Min(currentBlock + 1, maxBlock);
+                                currentLine = Math.Min(currentLine + 1, maxLine);
                                 dirty = true;
                                 break;
 
-                            case ConsoleKey.UpArrow:
+                            case ConsoleKey.UpArrow when key.Modifiers == 0:
                             case ConsoleKey.K when key.Modifiers == 0:
-                                currentBlock = Math.Max(currentBlock - 1, 0);
+                                currentLine = Math.Max(currentLine - 1, 0);
                                 dirty = true;
                                 break;
+
+                            case ConsoleKey.DownArrow when key.Modifiers == ConsoleModifiers.Shift:
+                            case ConsoleKey.J when key.Modifiers == ConsoleModifiers.Shift:
+                            {
+                                var next = scrollInfo.BlockStartLines.FirstOrDefault(s => s > currentLine, currentLine);
+                                currentLine = Math.Min(next, maxLine);
+                                dirty = true;
+                                break;
+                            }
+
+                            case ConsoleKey.UpArrow when key.Modifiers == ConsoleModifiers.Shift:
+                            case ConsoleKey.K when key.Modifiers == ConsoleModifiers.Shift:
+                            {
+                                var prev = scrollInfo.BlockStartLines.LastOrDefault(s => s < currentLine, 0);
+                                currentLine = prev;
+                                dirty = true;
+                                break;
+                            }
 
                             case ConsoleKey.PageDown:
                             case ConsoleKey.D when key.Modifiers == ConsoleModifiers.Control:
-                                currentBlock = Math.Min(currentBlock + Math.Max(1, h / 4), maxBlock);
+                                currentLine = Math.Min(currentLine + Math.Max(1, h / 2), maxLine);
                                 dirty = true;
                                 break;
 
                             case ConsoleKey.PageUp:
                             case ConsoleKey.U when key.Modifiers == ConsoleModifiers.Control:
-                                currentBlock = Math.Max(currentBlock - Math.Max(1, h / 4), 0);
+                                currentLine = Math.Max(currentLine - Math.Max(1, h / 2), 0);
                                 dirty = true;
                                 break;
 
                             case ConsoleKey.G when key.Modifiers == ConsoleModifiers.Shift:
-                                currentBlock = maxBlock;
+                                currentLine = maxLine;
                                 dirty = true;
                                 break;
 
                             case ConsoleKey.G when key.Modifiers == 0:
-                                currentBlock = 0;
+                                currentLine = 0;
                                 dirty = true;
                                 break;
 
@@ -119,7 +138,7 @@ public sealed class ViewCommand : AsyncCommand<ViewSettings>
 
                     if (dirty)
                     {
-                        viewer = baseViewer with { TopBlockIndex = currentBlock, ViewportHeight = h };
+                        viewer = baseViewer with { TopLineIndex = currentLine, ViewportHeight = h };
                         liveCtx.UpdateTarget(viewer);
                     }
 
@@ -144,9 +163,9 @@ public sealed class ViewCommand : AsyncCommand<ViewSettings>
         }
 
         int h = AnsiConsole.Profile.Height;
-        int currentBlock = 0;
+        int currentLine = 0;
         var baseViewer = BuildViewer(file.Source, settings);
-        var viewer = baseViewer with { TopBlockIndex = 0, ViewportHeight = h };
+        var viewer = baseViewer with { TopLineIndex = 0, ViewportHeight = h };
 
         using var cts = new CancellationTokenSource();
         using var watcher = new FileWatcherAdapter(settings.Path!);
@@ -194,41 +213,60 @@ public sealed class ViewCommand : AsyncCommand<ViewSettings>
                     if (System.Console.KeyAvailable)
                     {
                         var key = System.Console.ReadKey(intercept: true);
-                        int maxBlock = Math.Max(0, viewer.BlockCount - 1);
+                        var scrollInfo = viewer.ScrollInfo;
+                        int maxLine = Math.Max(0, scrollInfo.TotalLineCount - h);
 
                         switch (key.Key)
                         {
-                            case ConsoleKey.DownArrow:
+                            case ConsoleKey.DownArrow when key.Modifiers == 0:
                             case ConsoleKey.J when key.Modifiers == 0:
-                                currentBlock = Math.Min(currentBlock + 1, maxBlock);
+                                currentLine = Math.Min(currentLine + 1, maxLine);
                                 dirty = true;
                                 break;
 
-                            case ConsoleKey.UpArrow:
+                            case ConsoleKey.UpArrow when key.Modifiers == 0:
                             case ConsoleKey.K when key.Modifiers == 0:
-                                currentBlock = Math.Max(currentBlock - 1, 0);
+                                currentLine = Math.Max(currentLine - 1, 0);
                                 dirty = true;
                                 break;
+
+                            case ConsoleKey.DownArrow when key.Modifiers == ConsoleModifiers.Shift:
+                            case ConsoleKey.J when key.Modifiers == ConsoleModifiers.Shift:
+                            {
+                                var next = scrollInfo.BlockStartLines.FirstOrDefault(s => s > currentLine, currentLine);
+                                currentLine = Math.Min(next, maxLine);
+                                dirty = true;
+                                break;
+                            }
+
+                            case ConsoleKey.UpArrow when key.Modifiers == ConsoleModifiers.Shift:
+                            case ConsoleKey.K when key.Modifiers == ConsoleModifiers.Shift:
+                            {
+                                var prev = scrollInfo.BlockStartLines.LastOrDefault(s => s < currentLine, 0);
+                                currentLine = prev;
+                                dirty = true;
+                                break;
+                            }
 
                             case ConsoleKey.PageDown:
                             case ConsoleKey.D when key.Modifiers == ConsoleModifiers.Control:
-                                currentBlock = Math.Min(currentBlock + Math.Max(1, h / 4), maxBlock);
+                                currentLine = Math.Min(currentLine + Math.Max(1, h / 2), maxLine);
                                 dirty = true;
                                 break;
 
                             case ConsoleKey.PageUp:
                             case ConsoleKey.U when key.Modifiers == ConsoleModifiers.Control:
-                                currentBlock = Math.Max(currentBlock - Math.Max(1, h / 4), 0);
+                                currentLine = Math.Max(currentLine - Math.Max(1, h / 2), 0);
                                 dirty = true;
                                 break;
 
                             case ConsoleKey.G when key.Modifiers == ConsoleModifiers.Shift:
-                                currentBlock = Math.Max(0, viewer.BlockCount - 1);
+                                currentLine = maxLine;
                                 dirty = true;
                                 break;
 
                             case ConsoleKey.G when key.Modifiers == 0:
-                                currentBlock = 0;
+                                currentLine = 0;
                                 dirty = true;
                                 break;
 
@@ -252,8 +290,7 @@ public sealed class ViewCommand : AsyncCommand<ViewSettings>
 
                     if (dirty)
                     {
-                        currentBlock = Math.Min(currentBlock, Math.Max(0, baseViewer.BlockCount - 1));
-                        viewer = baseViewer with { TopBlockIndex = currentBlock, ViewportHeight = h };
+                        viewer = baseViewer with { TopLineIndex = currentLine, ViewportHeight = h };
                         liveCtx.UpdateTarget(viewer);
                     }
 
@@ -271,7 +308,7 @@ public sealed class ViewCommand : AsyncCommand<ViewSettings>
     private async Task<int> RunStreamModeAsync(ViewSettings settings)
     {
         int h = AnsiConsole.Profile.Height;
-        int currentBlock = 0;
+        int currentLine = 0;
         var renderCtx = new RenderContext(settings.ShowFrontmatter, settings.PlainLinks);
         var renderer = new SpectreMarkdownRenderer(renderCtx);
         var initialViewer = new MarkdownViewer(string.Empty) { ViewportHeight = h };
@@ -313,50 +350,68 @@ public sealed class ViewCommand : AsyncCommand<ViewSettings>
 
                     if (viewerChannel.Reader.TryRead(out var incoming))
                     {
-                        var newBase = incoming;
-                        currentBlock = Math.Max(0, newBase.BlockCount - 1);
-                        viewer = newBase with { TopBlockIndex = currentBlock, ViewportHeight = h };
+                        viewer = incoming;
+                        currentLine = int.MaxValue; // tail-follow: Render clamps to last visible line
                         dirty = true;
                     }
 
                     if (System.Console.KeyAvailable)
                     {
                         var key = System.Console.ReadKey(intercept: true);
-                        int maxBlock = Math.Max(0, viewer.BlockCount - 1);
+                        var scrollInfo = viewer.ScrollInfo;
+                        int maxLine = Math.Max(0, scrollInfo.TotalLineCount - h);
 
                         switch (key.Key)
                         {
-                            case ConsoleKey.DownArrow:
+                            case ConsoleKey.DownArrow when key.Modifiers == 0:
                             case ConsoleKey.J when key.Modifiers == 0:
-                                currentBlock = Math.Min(currentBlock + 1, maxBlock);
+                                currentLine = Math.Min(currentLine + 1, maxLine);
                                 dirty = true;
                                 break;
 
-                            case ConsoleKey.UpArrow:
+                            case ConsoleKey.UpArrow when key.Modifiers == 0:
                             case ConsoleKey.K when key.Modifiers == 0:
-                                currentBlock = Math.Max(currentBlock - 1, 0);
+                                currentLine = Math.Max(currentLine - 1, 0);
                                 dirty = true;
                                 break;
+
+                            case ConsoleKey.DownArrow when key.Modifiers == ConsoleModifiers.Shift:
+                            case ConsoleKey.J when key.Modifiers == ConsoleModifiers.Shift:
+                            {
+                                var next = scrollInfo.BlockStartLines.FirstOrDefault(s => s > currentLine, currentLine);
+                                currentLine = Math.Min(next, maxLine);
+                                dirty = true;
+                                break;
+                            }
+
+                            case ConsoleKey.UpArrow when key.Modifiers == ConsoleModifiers.Shift:
+                            case ConsoleKey.K when key.Modifiers == ConsoleModifiers.Shift:
+                            {
+                                var prev = scrollInfo.BlockStartLines.LastOrDefault(s => s < currentLine, 0);
+                                currentLine = prev;
+                                dirty = true;
+                                break;
+                            }
 
                             case ConsoleKey.PageDown:
                             case ConsoleKey.D when key.Modifiers == ConsoleModifiers.Control:
-                                currentBlock = Math.Min(currentBlock + Math.Max(1, h / 4), maxBlock);
+                                currentLine = Math.Min(currentLine + Math.Max(1, h / 2), maxLine);
                                 dirty = true;
                                 break;
 
                             case ConsoleKey.PageUp:
                             case ConsoleKey.U when key.Modifiers == ConsoleModifiers.Control:
-                                currentBlock = Math.Max(currentBlock - Math.Max(1, h / 4), 0);
+                                currentLine = Math.Max(currentLine - Math.Max(1, h / 2), 0);
                                 dirty = true;
                                 break;
 
                             case ConsoleKey.G when key.Modifiers == ConsoleModifiers.Shift:
-                                currentBlock = maxBlock;
+                                currentLine = maxLine;
                                 dirty = true;
                                 break;
 
                             case ConsoleKey.G when key.Modifiers == 0:
-                                currentBlock = 0;
+                                currentLine = 0;
                                 dirty = true;
                                 break;
 
@@ -382,7 +437,7 @@ public sealed class ViewCommand : AsyncCommand<ViewSettings>
 
                     if (dirty)
                     {
-                        viewer = viewer with { TopBlockIndex = currentBlock, ViewportHeight = h };
+                        viewer = viewer with { TopLineIndex = currentLine, ViewportHeight = h };
                         liveCtx.UpdateTarget(viewer);
                     }
 
