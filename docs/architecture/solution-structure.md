@@ -4,7 +4,7 @@
 
 ```
 mked/
-├── mked.sln
+├── mked.slnx
 ├── src/
 │   ├── Mked.Domain/
 │   │   └── Mked.Domain.csproj
