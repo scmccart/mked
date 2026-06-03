@@ -34,12 +34,16 @@ On Unix-like systems, Ctrl+C sends `SIGINT` to the process. The editor intercept
 
 | Key | Action |
 |---|---|
-| q or Ctrl+Q | Quit |
-| ↑ or k | Scroll up one line |
-| ↓ or j | Scroll down one line |
-| PageUp or b | Scroll up one page |
-| PageDown or Space | Scroll down one page |
-| g or Home | Jump to top of document |
-| G or End | Jump to bottom of document |
+| `q` / `Ctrl+C` | Quit |
+| `↑` / `k` | Scroll up one line |
+| `↓` / `j` | Scroll down one line |
+| `Shift+↑` / `Shift+K` | Jump to previous block boundary |
+| `Shift+↓` / `Shift+J` | Jump to next block boundary |
+| `PageUp` / `Ctrl+U` | Scroll up half a screen |
+| `PageDown` / `Ctrl+D` | Scroll down half a screen |
+| `g` | Jump to top of document |
+| `G` | Jump to bottom of document |
 
-The viewer offers both arrow-key / page-key bindings and vim-style single-key bindings, so it feels natural whether the user is accustomed to a terminal pager like `less` or a GUI editor.
+The viewer offers both arrow-key / page-key bindings and vim-style single-key bindings, so it feels natural whether the user is accustomed to a terminal pager like `less` or a text editor like Vim.
+
+Scrolling is **line-based**: one terminal line at a time for fine-grained navigation, or half-screen jumps for faster traversal. The Shift+J / Shift+K bindings snap to the nearest block boundary, making it easy to jump between headings, code blocks, and other top-level elements.
