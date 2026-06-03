@@ -4,6 +4,9 @@
   </PropertyGroup>
   <ItemGroup Label="Production">
     <PackageVersion Include="Markdig" Version="1.2.0" />
+    <PackageVersion Include="Spectre.Console" Version="0.55.2" />
+    <PackageVersion Include="Spectre.Console.Cli" Version="0.55.0" />
+    <PackageVersion Include="Spectre.Console.Testing" Version="0.55.2" />
   </ItemGroup>
   <ItemGroup Label="Test">
     <PackageVersion Include="AwesomeAssertions" Version="9.4.0" />

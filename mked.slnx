@@ -3,10 +3,13 @@
     <Project Path="src/Mked.Domain/Mked.Domain.csproj" />
     <Project Path="src/Mked.Infrastructure/Mked.Infrastructure.csproj" />
     <Project Path="src/Mked.Application/Mked.Application.csproj" />
+    <Project Path="src/Mked.Controls/Mked.Controls.csproj" />
+    <Project Path="src/Mked.Console/Mked.Console.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Mked.Domain.Tests/Mked.Domain.Tests.csproj" />
     <Project Path="tests/Mked.Infrastructure.Tests/Mked.Infrastructure.Tests.csproj" />
     <Project Path="tests/Mked.Application.Tests/Mked.Application.Tests.csproj" />
+    <Project Path="tests/Mked.Controls.Tests/Mked.Controls.Tests.csproj" />
   </Folder>
 </Solution>

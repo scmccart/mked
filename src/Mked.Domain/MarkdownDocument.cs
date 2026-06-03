@@ -16,8 +16,13 @@ public sealed class MarkdownDocument
         .Build();
 
     private readonly Markdig.Syntax.MarkdownDocument _ast;
+    private readonly string _source;
 
-    private MarkdownDocument(Markdig.Syntax.MarkdownDocument ast) => _ast = ast;
+    private MarkdownDocument(string source, Markdig.Syntax.MarkdownDocument ast)
+    {
+        _source = source;
+        _ast = ast;
+    }
 
     /// <summary>
     /// Parses <paramref name="source"/> and returns a <see cref="MarkdownDocument"/>.
@@ -29,8 +34,11 @@ public sealed class MarkdownDocument
     public static MarkdownDocument Parse(string source)
     {
         ArgumentNullException.ThrowIfNull(source);
-        return new MarkdownDocument(Markdig.Markdown.Parse(source, Pipeline));
+        return new MarkdownDocument(source, Markdig.Markdown.Parse(source, Pipeline));
     }
+
+    /// <summary>The original Markdown source text passed to <see cref="Parse"/>.</summary>
+    public string Source => _source;
 
     /// <summary>Returns <see langword="true"/> when the document contains no top-level blocks.</summary>
     public bool IsEmpty => _ast.Count == 0;
