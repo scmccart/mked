@@ -1,0 +1,94 @@
+{
+  "Home": {
+    "sourceFiles": [
+      {"path": "README.md", "hash": "short"},
+      {"path": "docs/vision.md", "hash": "vision"}
+    ],
+    "templateHash": "home-v1",
+    "generatedAt": "2026-06-03T00:12:25Z"
+  },
+  "Architecture": {
+    "sourceFiles": [
+      {"path": "docs/architecture/clean-architecture.md", "hash": "clean-arch"},
+      {"path": "docs/architecture/solution-structure.md", "hash": "sol-struct"}
+    ],
+    "templateHash": "arch-v1",
+    "generatedAt": "2026-06-03T00:12:25Z"
+  },
+  "Domain-Layer": {
+    "sourceFiles": [
+      {"path": "src/Mked.Domain/EditorState.cs", "hash": "editorstate"},
+      {"path": "src/Mked.Domain/ViewerState.cs", "hash": "viewerstate"},
+      {"path": "src/Mked.Domain/MarkdownDocument.cs", "hash": "markdowndoc"},
+      {"path": "src/Mked.Domain/Result.cs", "hash": "result"},
+      {"path": "src/Mked.Domain/Maybe.cs", "hash": "maybe"},
+      {"path": "src/Mked.Domain/MkedError.cs", "hash": "mkederror"},
+      {"path": "src/Mked.Domain/CursorPosition.cs", "hash": "cursorpos"},
+      {"path": "src/Mked.Domain/TextRange.cs", "hash": "textrange"},
+      {"path": "src/Mked.Domain/ViewportAnchor.cs", "hash": "vpanchor"}
+    ],
+    "templateHash": "domain-v1",
+    "generatedAt": "2026-06-03T00:12:25Z"
+  },
+  "Application-Layer": {
+    "sourceFiles": [
+      {"path": "src/Mked.Application/OpenFileUseCase.cs", "hash": "openfile"},
+      {"path": "src/Mked.Application/SaveFileUseCase.cs", "hash": "savefile"},
+      {"path": "src/Mked.Application/NewDocumentUseCase.cs", "hash": "newdoc"},
+      {"path": "src/Mked.Application/RenderDocumentUseCase.cs", "hash": "renderdoc"},
+      {"path": "src/Mked.Application/StreamInputUseCase.cs", "hash": "streaminput"},
+      {"path": "src/Mked.Application/IMarkdownRenderer.cs", "hash": "irenderer"},
+      {"path": "src/Mked.Application/RenderContext.cs", "hash": "renderctx"}
+    ],
+    "templateHash": "app-v1",
+    "generatedAt": "2026-06-03T00:12:25Z"
+  },
+  "Infrastructure-Layer": {
+    "sourceFiles": [
+      {"path": "src/Mked.Infrastructure/FileSystemReader.cs", "hash": "fsreader"},
+      {"path": "src/Mked.Infrastructure/FileSystemWriter.cs", "hash": "fswriter"},
+      {"path": "src/Mked.Infrastructure/FileWatcherAdapter.cs", "hash": "filewatcher"},
+      {"path": "src/Mked.Infrastructure/StdinInputReader.cs", "hash": "stdinreader"}
+    ],
+    "templateHash": "infra-v1",
+    "generatedAt": "2026-06-03T00:12:25Z"
+  },
+  "Controls-Library": {
+    "sourceFiles": [
+      {"path": "docs/architecture/solution-structure.md", "hash": "sol-struct"},
+      {"path": "docs/vision.md", "hash": "vision"}
+    ],
+    "templateHash": "controls-v1",
+    "generatedAt": "2026-06-03T00:12:25Z"
+  },
+  "Getting-Started": {
+    "sourceFiles": [
+      {"path": "README.md", "hash": "short"},
+      {"path": "docs/vision.md", "hash": "vision"}
+    ],
+    "templateHash": "getstart-v1",
+    "generatedAt": "2026-06-03T00:12:25Z"
+  },
+  "Keyboard-Bindings": {
+    "sourceFiles": [
+      {"path": "docs/reference/keyboard-bindings.md", "hash": "keybindings"}
+    ],
+    "templateHash": "keybind-v1",
+    "generatedAt": "2026-06-03T00:12:25Z"
+  },
+  "Supported-Markdown": {
+    "sourceFiles": [
+      {"path": "docs/reference/supported-markdown.md", "hash": "suppmd"}
+    ],
+    "templateHash": "suppmd-v1",
+    "generatedAt": "2026-06-03T00:12:25Z"
+  },
+  "Contributing": {
+    "sourceFiles": [
+      {"path": "docs/architecture/clean-architecture.md", "hash": "clean-arch"},
+      {"path": "docs/architecture/solution-structure.md", "hash": "sol-struct"}
+    ],
+    "templateHash": "contrib-v1",
+    "generatedAt": "2026-06-03T00:12:25Z"
+  }
+}

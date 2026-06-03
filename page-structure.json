@@ -1,0 +1,20 @@
+{
+  "pages": [
+    {"title": "Home", "slug": "Home", "level": 1, "children": []},
+    {"title": "Architecture", "slug": "Architecture", "level": 1, "children": [
+      {"title": "Domain Layer", "slug": "Domain-Layer", "level": 2},
+      {"title": "Application Layer", "slug": "Application-Layer", "level": 2},
+      {"title": "Infrastructure Layer", "slug": "Infrastructure-Layer", "level": 2}
+    ]},
+    {"title": "Controls Library", "slug": "Controls-Library", "level": 1, "children": []},
+    {"title": "Getting Started", "slug": "Getting-Started", "level": 1, "children": []},
+    {"title": "Keyboard Bindings", "slug": "Keyboard-Bindings", "level": 1, "children": []},
+    {"title": "Supported Markdown", "slug": "Supported-Markdown", "level": 1, "children": []},
+    {"title": "Contributing", "slug": "Contributing", "level": 1, "children": []},
+    {"title": "For Agents", "slug": "For-Agents", "level": 1, "children": [
+      {"title": "AGENTS.md", "slug": "AGENTSmd", "level": 2},
+      {"title": "llms.txt", "slug": "llmstxt", "level": 2}
+    ]}
+  ],
+  "generatedAt": "2026-06-03T00:12:25Z"
+}
