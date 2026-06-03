@@ -61,7 +61,6 @@ public sealed class ViewCommand : AsyncCommand<ViewSettings>
                     if (System.Console.KeyAvailable)
                     {
                         var key = System.Console.ReadKey(intercept: true);
-                        var scrollInfo = viewer.ScrollInfo;
                         int maxBlock = Math.Max(0, viewer.BlockCount - 1);
 
                         switch (key.Key)
@@ -253,7 +252,7 @@ public sealed class ViewCommand : AsyncCommand<ViewSettings>
 
                     if (dirty)
                     {
-                        currentBlock = Math.Min(currentBlock, Math.Max(0, viewer.BlockCount - 1));
+                        currentBlock = Math.Min(currentBlock, Math.Max(0, baseViewer.BlockCount - 1));
                         viewer = baseViewer with { TopBlockIndex = currentBlock, ViewportHeight = h };
                         liveCtx.UpdateTarget(viewer);
                     }
@@ -372,9 +371,12 @@ public sealed class ViewCommand : AsyncCommand<ViewSettings>
                     int newH = AnsiConsole.Profile.Height;
                     if (newW != lastW || newH != lastH)
                     {
+                        bool widthChanged = newW != lastW;
                         h = newH;
                         lastW = newW;
                         lastH = newH;
+                        if (widthChanged)
+                            viewer = BuildViewer(viewer.Markdown, settings);
                         dirty = true;
                     }
 

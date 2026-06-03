@@ -29,6 +29,8 @@ internal sealed class MarkdownBlockRenderer
             {
                 continue;
             }
+            if (!_showFrontmatter && block is YamlFrontMatterBlock)
+                continue;
             blockStartLines.Add(allLines.Count);
             allLines.AddRange(RenderBlock(block, options, maxWidth));
         }
@@ -186,9 +188,12 @@ internal sealed class MarkdownBlockRenderer
                 if (child is Markdig.Syntax.ParagraphBlock para && firstChild)
                 {
                     var text = RenderInlines(para.Inline);
-                    // Append inline content to same line as marker
                     int usedWidth = indent.Length + marker.Length;
+                    int linesBefore = lines.Count;
                     AppendRenderable(new Markup(text), lines, options, Math.Max(1, maxWidth - usedWidth));
+                    var continuationIndent = new Segment(new string(' ', usedWidth));
+                    for (int li = linesBefore; li < lines.Count; li++)
+                        lines[li].Insert(0, continuationIndent);
                 }
                 else if (child is Markdig.Syntax.ListBlock nestedList)
                 {

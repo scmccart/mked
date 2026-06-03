@@ -1,4 +1,5 @@
 using Markdig;
+using Markdig.Extensions.Yaml;
 
 namespace Mked.Controls;
 
@@ -36,8 +37,10 @@ public sealed record class MarkdownViewer(string Markdown) : IRenderable
     public int? ViewportHeight { get; init; }
 
     /// <summary>Total top-level block count (excludes parser-internal housekeeping blocks).</summary>
-    public int BlockCount => _ast.Count(b => b is not Markdig.Syntax.BlankLineBlock
-                                               and not Markdig.Syntax.LinkReferenceDefinitionGroup);
+    public int BlockCount => _ast.Count(b =>
+        b is not Markdig.Syntax.BlankLineBlock
+        and not Markdig.Syntax.LinkReferenceDefinitionGroup
+        && (ShowFrontmatter || b is not YamlFrontMatterBlock));
 
     /// <summary>
     /// Scroll metadata computed on first <see cref="Render"/> or <see cref="Measure"/> call.
@@ -58,9 +61,12 @@ public sealed record class MarkdownViewer(string Markdown) : IRenderable
     {
         var (lines, scrollInfo) = _state.EnsureCache(this, options, maxWidth);
 
-        int startLine = TopBlockIndex < scrollInfo.BlockStartLines.Count
-            ? scrollInfo.BlockStartLines[TopBlockIndex]
-            : 0;
+        int startLine = 0;
+        if (scrollInfo.BlockStartLines.Count > 0)
+        {
+            int idx = Math.Clamp(TopBlockIndex, 0, scrollInfo.BlockStartLines.Count - 1);
+            startLine = scrollInfo.BlockStartLines[idx];
+        }
 
         int endLine = ViewportHeight.HasValue
             ? Math.Min(startLine + ViewportHeight.Value, lines.Count)
@@ -78,14 +84,20 @@ public sealed record class MarkdownViewer(string Markdown) : IRenderable
     private sealed class RenderStateHolder
     {
         private (List<List<Segment>> Lines, MarkdownViewerScrollInfo Info)? _cached;
+        private (int Width, bool ShowFrontmatter, bool PlainLinks) _cacheKey;
 
         public MarkdownViewerScrollInfo? ScrollInfo => _cached?.Info;
 
         public (List<List<Segment>> Lines, MarkdownViewerScrollInfo Info) EnsureCache(
             MarkdownViewer viewer, RenderOptions options, int maxWidth)
         {
-            _cached ??= new MarkdownBlockRenderer(viewer.ShowFrontmatter, viewer.PlainLinks)
-                .Render(viewer._ast, options, maxWidth);
+            var key = (maxWidth, viewer.ShowFrontmatter, viewer.PlainLinks);
+            if (_cached is null || _cacheKey != key)
+            {
+                _cached = new MarkdownBlockRenderer(viewer.ShowFrontmatter, viewer.PlainLinks)
+                    .Render(viewer._ast, options, maxWidth);
+                _cacheKey = key;
+            }
             return _cached.Value;
         }
     }

@@ -1,6 +1,9 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace Mked.Console;
 
 /// <summary>CLI settings for the <c>view</c> command.</summary>
+[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
 public sealed class ViewSettings : CommandSettings
 {
     /// <summary>Path to the Markdown file to view. Required unless <see cref="Stream"/> is set.</summary>
