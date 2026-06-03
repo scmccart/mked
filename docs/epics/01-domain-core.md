@@ -6,19 +6,19 @@ or Presentation — it is the innermost ring of the Clean Architecture.
 
 ## Features
 
-### Feature: Result & Maybe Types
+### Feature: Result & Option Types
 
-Provide the hand-rolled `Result<T,E>` and `Maybe<T>` primitives that replace exceptions for
+Provide the hand-rolled `Result<T,E>` and `Option<T>` primitives that replace exceptions for
 all expected failure cases across the codebase.
 
 - As a developer, I can create a success value with `Result.Ok(value)` and a failure with `Result.Err(error)`
 - As a developer, I can transform a success value without touching the error using `Map`
 - As a developer, I can chain two fallible operations using `Bind` so that a failure short-circuits
 - As a developer, I can translate an error type using `MapError` without affecting the success path
-- As a developer, I can consume a result exhaustively using `Match` with `onOk` and `onErr` branches
+- As a developer, I can consume a result exhaustively using `Match` with success and failure branches
 - As a developer, I can use `BindAsync` and `MapAsync` to compose `Task<Result<T,E>>` pipelines
-- As a developer, I can represent an optional value with `Maybe<T>` instead of `null`
-- As a developer, I can bridge `Maybe<T>` to `Result<T,E>` using `OkOrErr`
+- As a developer, I can represent an optional value with `Option<T>` instead of `null`
+- As a developer, I can bridge `Option<T>` to `Result<T,E>` using `OkOrErr`
 
 ### Feature: Error Types
 
