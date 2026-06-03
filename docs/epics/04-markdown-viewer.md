@@ -29,11 +29,9 @@ Control whether YAML frontmatter is shown or silently stripped.
 
 ### Feature: Rendering Strategies
 
-Support multiple output backends so the viewer works in all terminal environments.
+Style output for the terminal environment. `mked view` is a TTY-only command; piped output is not supported.
 
-- As a user in a rich terminal, content is styled with colour and emphasis (`SpectreMarkdownRenderer`)
-- As a user piping output to a file or another tool, content is plain text with no ANSI codes (`PlainTextRenderer`)
-- As a user in a limited terminal, content uses only basic ANSI codes (`AnsiMarkdownRenderer`)
+- As a user, content is styled with colour and emphasis via `SpectreMarkdownRenderer`; colour depth degrades automatically on limited terminals
 - As a developer, `IMarkdownRenderer` is injected; switching strategy requires no change to the viewer widget
 
 ### Feature: Scrolling & Navigation
