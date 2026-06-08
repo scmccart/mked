@@ -2,6 +2,8 @@
 
 ## Editor mode
 
+> **Not yet implemented.** `mked edit` is planned for [Epic 5](../epics/05-markdown-editor.md). The bindings below are documented for reference and will take effect in that release.
+
 | Key | Action |
 |---|---|
 | Ctrl+S | Save file |
