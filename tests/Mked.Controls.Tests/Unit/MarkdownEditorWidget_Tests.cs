@@ -141,4 +141,25 @@ public sealed class MarkdownEditorWidget_Tests
         segs.Should().Contain(s =>
             s.Text == " " && s.Style.Decoration.HasFlag(Decoration.Invert));
     }
+
+    // ─── Viewport padding ─────────────────────────────────────────────────────
+
+    [Fact]
+    public void ViewportPadding_WithFewerLinesThanHeight_DoesNotEndOnLineBreak()
+    {
+        // 2 content lines, viewportHeight=5 → 3 pad rows should be appended without
+        // the widget ending on a LineBreak (which would cause height overshoot when
+        // composed with VerticalLayout).
+        var widget = new MarkdownEditorWidget(
+            buffer: "line1\nline2",
+            cursor: (1, 1),
+            highlights: Array.Empty<StyledSpan>(),
+            topLineIndex: 0,
+            viewportHeight: 5);
+
+        var segs = GetSegments(widget);
+
+        segs.Should().NotBeEmpty();
+        segs.Last().IsLineBreak.Should().BeFalse();
+    }
 }

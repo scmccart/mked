@@ -12,21 +12,34 @@ public sealed class EditorState
 
         /// <summary>Captures the current state as the inverse of this command.</summary>
         public IEditorCommand CaptureInverse(EditorState state);
+
+        /// <summary>Fires the observer callbacks appropriate for this command type.</summary>
+        public void Notify(EditorState state);
     }
 
     private sealed class BufferCommand(string before) : IEditorCommand
     {
         public void Apply(EditorState state) => state.SetBufferInternal(before);
         public IEditorCommand CaptureInverse(EditorState state) => new BufferCommand(state.Buffer);
+        public void Notify(EditorState state)
+        {
+            foreach (var observer in state._observers)
+                observer.OnBufferChanged(state.Buffer);
+        }
     }
 
     private sealed class CursorCommand(CursorPosition before) : IEditorCommand
     {
         public void Apply(EditorState state) => state.SetCursorInternal(before);
         public IEditorCommand CaptureInverse(EditorState state) => new CursorCommand(state.Cursor);
+        public void Notify(EditorState state)
+        {
+            foreach (var observer in state._observers)
+                observer.OnCursorMoved(state.Cursor);
+        }
     }
 
-    private readonly string _initialBuffer;
+    private string _cleanBuffer;
     private readonly List<IEditorObserver> _observers = [];
     private readonly Stack<IEditorCommand> _undoStack = new();
     private readonly Stack<IEditorCommand> _redoStack = new();
@@ -36,7 +49,7 @@ public sealed class EditorState
     public EditorState(string initialBuffer)
     {
         ArgumentNullException.ThrowIfNull(initialBuffer);
-        _initialBuffer = initialBuffer;
+        _cleanBuffer = initialBuffer;
         Buffer = initialBuffer;
         Cursor = new CursorPosition(1, 1);
     }
@@ -58,6 +71,16 @@ public sealed class EditorState
 
     /// <summary>Returns <see langword="true"/> when <c>Redo</c> can be called.</summary>
     public bool CanRedo => _redoStack.Count > 0;
+
+    /// <summary>
+    /// Records the current buffer as the clean baseline, resetting <see cref="IsDirty"/> to
+    /// <see langword="false"/>. Call after a successful save or when loading a new document.
+    /// </summary>
+    public void MarkClean()
+    {
+        _cleanBuffer = Buffer;
+        _isDirty = false;
+    }
 
     /// <summary>Registers <paramref name="observer"/> to receive future change notifications.</summary>
     public void Subscribe(IEditorObserver observer)
@@ -234,11 +257,7 @@ public sealed class EditorState
         IEditorCommand cmd = _undoStack.Pop();
         _redoStack.Push(cmd.CaptureInverse(this));
         cmd.Apply(this);
-        foreach (var observer in _observers)
-        {
-            observer.OnBufferChanged(Buffer);
-            observer.OnCursorMoved(Cursor);
-        }
+        cmd.Notify(this);
     }
 
     /// <summary>
@@ -250,17 +269,13 @@ public sealed class EditorState
         IEditorCommand cmd = _redoStack.Pop();
         _undoStack.Push(cmd.CaptureInverse(this));
         cmd.Apply(this);
-        foreach (var observer in _observers)
-        {
-            observer.OnBufferChanged(Buffer);
-            observer.OnCursorMoved(Cursor);
-        }
+        cmd.Notify(this);
     }
 
     private void SetBufferInternal(string buffer)
     {
         Buffer = buffer;
-        _isDirty = buffer != _initialBuffer;
+        _isDirty = buffer != _cleanBuffer;
     }
 
     private void SetCursorInternal(CursorPosition position) => Cursor = position;

@@ -214,7 +214,7 @@ public sealed class EditCommand : AsyncCommand<EditSettings>
                 return false;
 
             case EditorAction.SaveFile:
-                await SaveAsync(session, state.Buffer);
+                await SaveAsync(session, state);
                 return true;
 
             case EditorAction.Quit:
@@ -251,14 +251,16 @@ public sealed class EditCommand : AsyncCommand<EditSettings>
 
     // ─── File operations ──────────────────────────────────────────────────────
 
-    private static async Task SaveAsync(EditSession session, string content)
+    private static async Task SaveAsync(EditSession session, EditorState state)
     {
         if (session.FilePath is null)
             session.FilePath = WithCursorVisible(() => AnsiConsole.Ask<string>("Save as: "));
 
-        var result = await new SaveFileUseCase(new FileSystemWriter()).ExecuteAsync(session.FilePath, content);
+        var result = await new SaveFileUseCase(new FileSystemWriter()).ExecuteAsync(session.FilePath, state.Buffer);
         if (result is Result<Unit, MkedError>.Err(var err))
             AnsiConsole.MarkupLine($"[red]{Markup.Escape(FormatError(err))}[/]");
+        else
+            state.MarkClean();
     }
 
     private static async Task HandleQuitAsync(EditorState state, EditSession session)
@@ -272,7 +274,7 @@ public sealed class EditCommand : AsyncCommand<EditSettings>
 
             if (choice == "Save and quit")
             {
-                await SaveAsync(session, state.Buffer);
+                await SaveAsync(session, state);
                 session.Cancelled = true;
             }
             else if (choice == "Quit without saving")
@@ -296,7 +298,7 @@ public sealed class EditCommand : AsyncCommand<EditSettings>
                     .AddChoices("Save and new", "Discard and new", "Cancel")));
 
             if (choice == "Save and new")
-                await SaveAsync(session, state.Buffer);
+                await SaveAsync(session, state);
             else if (choice == "Cancel")
                 return false;
         }
@@ -304,6 +306,7 @@ public sealed class EditCommand : AsyncCommand<EditSettings>
         EditorState fresh = NewDocumentUseCase.Execute();
         state.UpdateBuffer(fresh.Buffer);
         state.UpdateCursor(fresh.Cursor);
+        state.MarkClean();
         session.FilePath = null;
         return true;
     }
@@ -318,7 +321,7 @@ public sealed class EditCommand : AsyncCommand<EditSettings>
                     .AddChoices("Save and open", "Discard and open", "Cancel")));
 
             if (choice == "Save and open")
-                await SaveAsync(session, state.Buffer);
+                await SaveAsync(session, state);
             else if (choice == "Cancel")
                 return false;
         }
@@ -330,6 +333,7 @@ public sealed class EditCommand : AsyncCommand<EditSettings>
         {
             state.UpdateBuffer(openedFile.Source);
             state.UpdateCursor(new CursorPosition(1, 1));
+            state.MarkClean();
             session.FilePath = path;
             return true;
         }

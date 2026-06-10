@@ -108,7 +108,15 @@ public sealed class MarkdownEditorWidget : IRenderable
         {
             int padCount = _viewportHeight.Value - (endLine - startLine);
             for (int i = 0; i < padCount; i++)
-                yield return Segment.LineBreak;
+            {
+                if (!firstLine)
+                    yield return Segment.LineBreak;
+                firstLine = false;
+                // Emit an empty-text segment so the widget never ends on a LineBreak.
+                // This prevents composed renderables (e.g. VerticalLayout) from adding
+                // a double line break when they insert their own separator.
+                yield return new Segment(string.Empty);
+            }
         }
     }
 
