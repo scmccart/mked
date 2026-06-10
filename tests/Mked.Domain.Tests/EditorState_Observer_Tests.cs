@@ -74,4 +74,74 @@ public class EditorState_Observer_Tests
 
         spy.BufferCallCount.Should().Be(0);
     }
+
+    // ─── Selective Undo/Redo notifications ────────────────────────────────────
+
+    [Fact]
+    public void Undo_BufferCommand_NotifiesOnlyOnBufferChanged()
+    {
+        var state = new EditorState("before");
+        var spy = new SpyObserver();
+        state.Subscribe(spy);
+        state.UpdateBuffer("after");
+        spy.BufferCallCount.Should().Be(1);
+        spy.CursorCallCount.Should().Be(0);
+
+        state.Undo();
+
+        spy.BufferCallCount.Should().Be(2);
+        spy.CursorCallCount.Should().Be(0);
+    }
+
+    [Fact]
+    public void Undo_CursorCommand_NotifiesOnlyOnCursorMoved()
+    {
+        var state = new EditorState("line1\nline2");
+        var spy = new SpyObserver();
+        state.Subscribe(spy);
+        state.UpdateCursor(new CursorPosition(2, 1));
+        spy.BufferCallCount.Should().Be(0);
+        spy.CursorCallCount.Should().Be(1);
+
+        state.Undo();
+
+        spy.BufferCallCount.Should().Be(0);
+        spy.CursorCallCount.Should().Be(2);
+    }
+
+    [Fact]
+    public void Redo_BufferCommand_NotifiesOnlyOnBufferChanged()
+    {
+        var state = new EditorState("before");
+        var spy = new SpyObserver();
+        state.Subscribe(spy);
+        state.UpdateBuffer("after");
+        state.Undo();
+
+        var bufCountBeforeRedo = spy.BufferCallCount;
+        var curCountBeforeRedo = spy.CursorCallCount;
+
+        state.Redo();
+
+        spy.BufferCallCount.Should().Be(bufCountBeforeRedo + 1);
+        spy.CursorCallCount.Should().Be(curCountBeforeRedo);
+    }
+
+    [Fact]
+    public void Redo_CursorCommand_NotifiesOnlyOnCursorMoved()
+    {
+        var state = new EditorState("line1\nline2");
+        var spy = new SpyObserver();
+        state.Subscribe(spy);
+        state.UpdateCursor(new CursorPosition(2, 1));
+        state.Undo();
+
+        var bufCountBeforeRedo = spy.BufferCallCount;
+        var curCountBeforeRedo = spy.CursorCallCount;
+
+        state.Redo();
+
+        spy.BufferCallCount.Should().Be(bufCountBeforeRedo);
+        spy.CursorCallCount.Should().Be(curCountBeforeRedo + 1);
+    }
 }

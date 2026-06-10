@@ -9,19 +9,37 @@ public sealed class EditorState
     private interface IEditorCommand
     {
         public void Apply(EditorState state);
+
+        /// <summary>Captures the current state as the inverse of this command.</summary>
+        public IEditorCommand CaptureInverse(EditorState state);
+
+        /// <summary>Fires the observer callbacks appropriate for this command type.</summary>
+        public void Notify(EditorState state);
     }
 
     private sealed class BufferCommand(string before) : IEditorCommand
     {
         public void Apply(EditorState state) => state.SetBufferInternal(before);
+        public IEditorCommand CaptureInverse(EditorState state) => new BufferCommand(state.Buffer);
+        public void Notify(EditorState state)
+        {
+            foreach (var observer in state._observers)
+                observer.OnBufferChanged(state.Buffer);
+        }
     }
 
     private sealed class CursorCommand(CursorPosition before) : IEditorCommand
     {
         public void Apply(EditorState state) => state.SetCursorInternal(before);
+        public IEditorCommand CaptureInverse(EditorState state) => new CursorCommand(state.Cursor);
+        public void Notify(EditorState state)
+        {
+            foreach (var observer in state._observers)
+                observer.OnCursorMoved(state.Cursor);
+        }
     }
 
-    private readonly string _initialBuffer;
+    private string _cleanBuffer;
     private readonly List<IEditorObserver> _observers = [];
     private readonly Stack<IEditorCommand> _undoStack = new();
     private readonly Stack<IEditorCommand> _redoStack = new();
@@ -31,7 +49,7 @@ public sealed class EditorState
     public EditorState(string initialBuffer)
     {
         ArgumentNullException.ThrowIfNull(initialBuffer);
-        _initialBuffer = initialBuffer;
+        _cleanBuffer = initialBuffer;
         Buffer = initialBuffer;
         Cursor = new CursorPosition(1, 1);
     }
@@ -53,6 +71,16 @@ public sealed class EditorState
 
     /// <summary>Returns <see langword="true"/> when <c>Redo</c> can be called.</summary>
     public bool CanRedo => _redoStack.Count > 0;
+
+    /// <summary>
+    /// Records the current buffer as the clean baseline, resetting <see cref="IsDirty"/> to
+    /// <see langword="false"/>. Call after a successful save or when loading a new document.
+    /// </summary>
+    public void MarkClean()
+    {
+        _cleanBuffer = Buffer;
+        _isDirty = false;
+    }
 
     /// <summary>Registers <paramref name="observer"/> to receive future change notifications.</summary>
     public void Subscribe(IEditorObserver observer)
@@ -82,10 +110,173 @@ public sealed class EditorState
             observer.OnCursorMoved(Cursor);
     }
 
+    /// <summary>
+    /// Inserts <paramref name="text"/> into the buffer at <paramref name="position"/>,
+    /// pushes an undo command, clears the redo stack, and notifies observers.
+    /// </summary>
+    public void Insert(CursorPosition position, string text)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        string newBuffer = BufferOperations.Insert(Buffer, position, text);
+        _undoStack.Push(new BufferCommand(Buffer));
+        _redoStack.Clear();
+        SetBufferInternal(newBuffer);
+        foreach (var observer in _observers)
+            observer.OnBufferChanged(Buffer);
+    }
+
+    /// <summary>
+    /// Deletes the characters within <paramref name="range"/> from the buffer,
+    /// moves the cursor to <paramref name="range"/>.Start, pushes an undo command,
+    /// clears the redo stack, and notifies observers.
+    /// </summary>
+    public void Delete(TextRange range)
+    {
+        string newBuffer = BufferOperations.Delete(Buffer, range);
+        _undoStack.Push(new BufferCommand(Buffer));
+        _redoStack.Clear();
+        SetBufferInternal(newBuffer);
+        SetCursorInternal(range.Start);
+        foreach (var observer in _observers)
+        {
+            observer.OnBufferChanged(Buffer);
+            observer.OnCursorMoved(Cursor);
+        }
+    }
+
+    /// <summary>
+    /// Moves the cursor one character to the left. No-op at the start of the buffer.
+    /// Does not push to the undo stack.
+    /// </summary>
+    public void MoveCursorLeft()
+    {
+        CursorPosition next = CursorNavigation.MoveLeft(Buffer, Cursor);
+        if (next == Cursor) return;
+        SetCursorInternal(next);
+        foreach (var observer in _observers)
+            observer.OnCursorMoved(Cursor);
+    }
+
+    /// <summary>
+    /// Moves the cursor one character to the right. No-op at the end of the buffer.
+    /// Does not push to the undo stack.
+    /// </summary>
+    public void MoveCursorRight()
+    {
+        CursorPosition next = CursorNavigation.MoveRight(Buffer, Cursor);
+        if (next == Cursor) return;
+        SetCursorInternal(next);
+        foreach (var observer in _observers)
+            observer.OnCursorMoved(Cursor);
+    }
+
+    /// <summary>
+    /// Moves the cursor up one line. No-op when already on the first line.
+    /// Does not push to the undo stack.
+    /// </summary>
+    public void MoveCursorUp()
+    {
+        CursorPosition next = CursorNavigation.MoveUp(Buffer, Cursor);
+        if (next == Cursor) return;
+        SetCursorInternal(next);
+        foreach (var observer in _observers)
+            observer.OnCursorMoved(Cursor);
+    }
+
+    /// <summary>
+    /// Moves the cursor down one line. No-op when already on the last line.
+    /// Does not push to the undo stack.
+    /// </summary>
+    public void MoveCursorDown()
+    {
+        CursorPosition next = CursorNavigation.MoveDown(Buffer, Cursor);
+        if (next == Cursor) return;
+        SetCursorInternal(next);
+        foreach (var observer in _observers)
+            observer.OnCursorMoved(Cursor);
+    }
+
+    /// <summary>
+    /// Moves the cursor left past whitespace and then past a word boundary.
+    /// Does not push to the undo stack.
+    /// </summary>
+    public void MoveCursorWordLeft()
+    {
+        CursorPosition next = CursorNavigation.MoveWordLeft(Buffer, Cursor);
+        if (next == Cursor) return;
+        SetCursorInternal(next);
+        foreach (var observer in _observers)
+            observer.OnCursorMoved(Cursor);
+    }
+
+    /// <summary>
+    /// Moves the cursor right past a word and then past whitespace.
+    /// Does not push to the undo stack.
+    /// </summary>
+    public void MoveCursorWordRight()
+    {
+        CursorPosition next = CursorNavigation.MoveWordRight(Buffer, Cursor);
+        if (next == Cursor) return;
+        SetCursorInternal(next);
+        foreach (var observer in _observers)
+            observer.OnCursorMoved(Cursor);
+    }
+
+    /// <summary>
+    /// Moves the cursor to column 1 of the current line. No-op when already at column 1.
+    /// Does not push to the undo stack.
+    /// </summary>
+    public void MoveCursorToLineStart()
+    {
+        CursorPosition next = CursorNavigation.MoveToLineStart(Buffer, Cursor);
+        if (next == Cursor) return;
+        SetCursorInternal(next);
+        foreach (var observer in _observers)
+            observer.OnCursorMoved(Cursor);
+    }
+
+    /// <summary>
+    /// Moves the cursor to one past the last character on the current line.
+    /// No-op when already at the end of the line. Does not push to the undo stack.
+    /// </summary>
+    public void MoveCursorToLineEnd()
+    {
+        CursorPosition next = CursorNavigation.MoveToLineEnd(Buffer, Cursor);
+        if (next == Cursor) return;
+        SetCursorInternal(next);
+        foreach (var observer in _observers)
+            observer.OnCursorMoved(Cursor);
+    }
+
+    /// <summary>
+    /// Reverts the most recent buffer or cursor change. No-op when <see cref="CanUndo"/> is <see langword="false"/>.
+    /// </summary>
+    public void Undo()
+    {
+        if (!CanUndo) return;
+        IEditorCommand cmd = _undoStack.Pop();
+        _redoStack.Push(cmd.CaptureInverse(this));
+        cmd.Apply(this);
+        cmd.Notify(this);
+    }
+
+    /// <summary>
+    /// Reapplies the most recently undone change. No-op when <see cref="CanRedo"/> is <see langword="false"/>.
+    /// </summary>
+    public void Redo()
+    {
+        if (!CanRedo) return;
+        IEditorCommand cmd = _redoStack.Pop();
+        _undoStack.Push(cmd.CaptureInverse(this));
+        cmd.Apply(this);
+        cmd.Notify(this);
+    }
+
     private void SetBufferInternal(string buffer)
     {
         Buffer = buffer;
-        _isDirty = buffer != _initialBuffer;
+        Cursor = CursorNavigation.Clamp(buffer, Cursor);
+        _isDirty = buffer != _cleanBuffer;
     }
 
     private void SetCursorInternal(CursorPosition position) => Cursor = position;
