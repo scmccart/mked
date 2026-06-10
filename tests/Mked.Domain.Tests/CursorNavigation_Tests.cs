@@ -266,4 +266,46 @@ public class CursorNavigation_Tests
 
         result.Should().Be(new CursorPosition(2, 2));
     }
+
+    // ── MoveLeft column clamping (Fix 4) ─────────────────────────────────────
+
+    [Fact]
+    public void MoveLeft_OutOfRangeColumn_ClampsResultToLineEnd()
+    {
+        // Line 1 "abc" has length 3; end=col 4. An out-of-range input col 99
+        // should move left but the returned column must not exceed lineLength+1.
+        CursorPosition result = CursorNavigation.MoveLeft(MultiLine, new CursorPosition(1, 99));
+
+        result.Column.Should().BeLessThanOrEqualTo(4); // lineLength+1
+    }
+
+    [Fact]
+    public void MoveLeft_ColumnOneAboveEnd_DecrementsNormally()
+    {
+        // Slightly past end (col 5 on a length-3 line) → should clamp to col 4.
+        CursorPosition result = CursorNavigation.MoveLeft(MultiLine, new CursorPosition(1, 5));
+
+        result.Should().Be(new CursorPosition(1, 4));
+    }
+
+    // ── MoveRight column clamping (Fix 5) ────────────────────────────────────
+
+    [Fact]
+    public void MoveRight_OutOfRangeColumnOnLastLine_ClampsToLineEnd()
+    {
+        // Line 3 "ghi" has length 3; end=col 4. Column 99 on the last line
+        // must return col 4, not 99.
+        CursorPosition result = CursorNavigation.MoveRight(MultiLine, new CursorPosition(3, 99));
+
+        result.Should().Be(new CursorPosition(3, 4));
+    }
+
+    [Fact]
+    public void MoveRight_AtEndOfLastLine_StaysAtEnd_Clamped()
+    {
+        // Already at valid end (col 4) — still returns col 4 (no change/no over-run).
+        CursorPosition result = CursorNavigation.MoveRight(MultiLine, new CursorPosition(3, 4));
+
+        result.Should().Be(new CursorPosition(3, 4));
+    }
 }

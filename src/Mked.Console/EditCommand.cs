@@ -155,8 +155,8 @@ public sealed class EditCommand : AsyncCommand<EditSettings>
                 CursorPosition target = CursorNavigation.MoveLeft(state.Buffer, state.Cursor);
                 if (target != state.Cursor)
                 {
+                    // Delete repositions the cursor to range.Start automatically.
                     state.Delete(new TextRange(target, state.Cursor));
-                    state.UpdateCursor(target);
                     return true;
                 }
                 return false;
@@ -236,12 +236,25 @@ public sealed class EditCommand : AsyncCommand<EditSettings>
         }
     }
 
+    // ─── Cursor-visibility helper ─────────────────────────────────────────────
+
+    /// <summary>
+    /// Temporarily restores the terminal cursor around an interactive <paramref name="prompt"/>
+    /// and hides it again afterwards. Ensures visible caret during AnsiConsole.Ask/Prompt calls.
+    /// </summary>
+    private static T WithCursorVisible<T>(Func<T> prompt)
+    {
+        System.Console.CursorVisible = true;
+        try { return prompt(); }
+        finally { System.Console.CursorVisible = false; }
+    }
+
     // ─── File operations ──────────────────────────────────────────────────────
 
     private static async Task SaveAsync(EditSession session, string content)
     {
         if (session.FilePath is null)
-            session.FilePath = AnsiConsole.Ask<string>("Save as: ");
+            session.FilePath = WithCursorVisible(() => AnsiConsole.Ask<string>("Save as: "));
 
         var result = await new SaveFileUseCase(new FileSystemWriter()).ExecuteAsync(session.FilePath, content);
         if (result is Result<Unit, MkedError>.Err(var err))
@@ -252,10 +265,10 @@ public sealed class EditCommand : AsyncCommand<EditSettings>
     {
         if (state.IsDirty)
         {
-            var choice = AnsiConsole.Prompt(
+            var choice = WithCursorVisible(() => AnsiConsole.Prompt(
                 new SelectionPrompt<string>()
                     .Title("Unsaved changes. Save before quitting?")
-                    .AddChoices("Save and quit", "Quit without saving", "Cancel"));
+                    .AddChoices("Save and quit", "Quit without saving", "Cancel")));
 
             if (choice == "Save and quit")
             {
@@ -277,10 +290,10 @@ public sealed class EditCommand : AsyncCommand<EditSettings>
     {
         if (state.IsDirty)
         {
-            var choice = AnsiConsole.Prompt(
+            var choice = WithCursorVisible(() => AnsiConsole.Prompt(
                 new SelectionPrompt<string>()
                     .Title("Unsaved changes. Save before opening a new document?")
-                    .AddChoices("Save and new", "Discard and new", "Cancel"));
+                    .AddChoices("Save and new", "Discard and new", "Cancel")));
 
             if (choice == "Save and new")
                 await SaveAsync(session, state.Buffer);
@@ -299,10 +312,10 @@ public sealed class EditCommand : AsyncCommand<EditSettings>
     {
         if (state.IsDirty)
         {
-            var choice = AnsiConsole.Prompt(
+            var choice = WithCursorVisible(() => AnsiConsole.Prompt(
                 new SelectionPrompt<string>()
                     .Title("Unsaved changes. Save before opening another file?")
-                    .AddChoices("Save and open", "Discard and open", "Cancel"));
+                    .AddChoices("Save and open", "Discard and open", "Cancel")));
 
             if (choice == "Save and open")
                 await SaveAsync(session, state.Buffer);
@@ -310,7 +323,7 @@ public sealed class EditCommand : AsyncCommand<EditSettings>
                 return false;
         }
 
-        string path = AnsiConsole.Ask<string>("Open file: ");
+        string path = WithCursorVisible(() => AnsiConsole.Ask<string>("Open file: "));
         var result = await new OpenFileUseCase(new FileSystemReader()).ExecuteAsync(path);
 
         if (result is Result<OpenedFile, MkedError>.Ok(var openedFile))

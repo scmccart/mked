@@ -9,16 +9,21 @@ public sealed class EditorState
     private interface IEditorCommand
     {
         public void Apply(EditorState state);
+
+        /// <summary>Captures the current state as the inverse of this command.</summary>
+        public IEditorCommand CaptureInverse(EditorState state);
     }
 
     private sealed class BufferCommand(string before) : IEditorCommand
     {
         public void Apply(EditorState state) => state.SetBufferInternal(before);
+        public IEditorCommand CaptureInverse(EditorState state) => new BufferCommand(state.Buffer);
     }
 
     private sealed class CursorCommand(CursorPosition before) : IEditorCommand
     {
         public void Apply(EditorState state) => state.SetCursorInternal(before);
+        public IEditorCommand CaptureInverse(EditorState state) => new CursorCommand(state.Cursor);
     }
 
     private readonly string _initialBuffer;
@@ -99,7 +104,8 @@ public sealed class EditorState
 
     /// <summary>
     /// Deletes the characters within <paramref name="range"/> from the buffer,
-    /// pushes an undo command, clears the redo stack, and notifies observers.
+    /// moves the cursor to <paramref name="range"/>.Start, pushes an undo command,
+    /// clears the redo stack, and notifies observers.
     /// </summary>
     public void Delete(TextRange range)
     {
@@ -107,8 +113,12 @@ public sealed class EditorState
         _undoStack.Push(new BufferCommand(Buffer));
         _redoStack.Clear();
         SetBufferInternal(newBuffer);
+        SetCursorInternal(range.Start);
         foreach (var observer in _observers)
+        {
             observer.OnBufferChanged(Buffer);
+            observer.OnCursorMoved(Cursor);
+        }
     }
 
     /// <summary>
@@ -222,7 +232,7 @@ public sealed class EditorState
     {
         if (!CanUndo) return;
         IEditorCommand cmd = _undoStack.Pop();
-        _redoStack.Push(new BufferCommand(Buffer));
+        _redoStack.Push(cmd.CaptureInverse(this));
         cmd.Apply(this);
         foreach (var observer in _observers)
         {
@@ -238,7 +248,7 @@ public sealed class EditorState
     {
         if (!CanRedo) return;
         IEditorCommand cmd = _redoStack.Pop();
-        _undoStack.Push(new BufferCommand(Buffer));
+        _undoStack.Push(cmd.CaptureInverse(this));
         cmd.Apply(this);
         foreach (var observer in _observers)
         {

@@ -16,7 +16,7 @@ public static class CursorNavigation
         int lineIndex = Math.Clamp(current.Line - 1, 0, lines.Length - 1);
 
         if (current.Column > 1)
-            return new CursorPosition(lineIndex + 1, current.Column - 1);
+            return new CursorPosition(lineIndex + 1, Math.Min(current.Column - 1, lines[lineIndex].Length + 1));
 
         if (lineIndex == 0)
             return new CursorPosition(1, 1);
@@ -42,7 +42,7 @@ public static class CursorNavigation
             return new CursorPosition(lineIndex + 1, current.Column + 1);
 
         if (lineIndex == lines.Length - 1)
-            return new CursorPosition(lineIndex + 1, current.Column);
+            return new CursorPosition(lineIndex + 1, Math.Min(current.Column, line.Length + 1));
 
         return new CursorPosition(lineIndex + 2, 1);
     }

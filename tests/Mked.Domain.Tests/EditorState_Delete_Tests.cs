@@ -53,4 +53,48 @@ public class EditorState_Delete_Tests
 
         obs.Verify(o => o.OnBufferChanged("ad"), Times.Once());
     }
+
+    // ── Cursor repositioning & single undo step ───────────────────────────────
+
+    [Fact]
+    public void Delete_MovesCursorToRangeStart()
+    {
+        var state = new EditorState("hello world");
+        // Delete " world" from (1,6) to (1,12)
+        var start = new CursorPosition(1, 6);
+        var range = new TextRange(start, new CursorPosition(1, 12));
+
+        state.Delete(range);
+
+        state.Cursor.Should().Be(start);
+    }
+
+    [Fact]
+    public void Delete_ProducesSingleUndoEntry()
+    {
+        // One Delete should push exactly one entry: Undo once must restore the full
+        // pre-delete state and leave CanUndo false.
+        var state = new EditorState("abcde");
+        var range = new TextRange(new CursorPosition(1, 2), new CursorPosition(1, 4));
+
+        state.Delete(range);
+        state.Undo();
+
+        state.Buffer.Should().Be("abcde");
+        state.CanUndo.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Delete_Observer_NotifiedOfCursorMoveToRangeStart()
+    {
+        var state = new EditorState("hello");
+        var obs = new Mock<IEditorObserver>();
+        state.Subscribe(obs.Object);
+        var start = new CursorPosition(1, 2);
+        var range = new TextRange(start, new CursorPosition(1, 4));
+
+        state.Delete(range);
+
+        obs.Verify(o => o.OnCursorMoved(start), Times.Once());
+    }
 }
