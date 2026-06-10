@@ -4,31 +4,22 @@
 
 | Key | Action |
 |---|---|
-| Ctrl+S | Save file |
-| Ctrl+Q | Quit (prompts if there are unsaved changes) |
-| Ctrl+Z | Undo |
-| Ctrl+Y | Redo |
-| Ctrl+X | Cut selection |
-| Ctrl+C | Copy selection |
-| Ctrl+V | Paste |
-| Ctrl+A | Select all |
-| Arrow keys | Move cursor one character / line |
-| Home | Move to start of line |
-| End | Move to end of line |
-| Ctrl+Home | Move to start of document |
-| Ctrl+End | Move to end of document |
-| PageUp | Scroll preview pane up one page |
-| PageDown | Scroll preview pane down one page |
-| Enter | Insert new line |
-| Backspace | Delete character before cursor |
-| Delete | Delete character after cursor |
-| Ctrl+Backspace | Delete word before cursor |
-| Tab | Indent (insert spaces) |
-| Shift+Tab | Decrease indent |
-
-### Note on Ctrl+C
-
-On Unix-like systems, Ctrl+C sends `SIGINT` to the process. The editor intercepts this signal and treats it as a quit request, prompting to save if there are unsaved changes rather than exiting immediately.
+| _Any printable character_ | Insert at cursor |
+| `Enter` | Insert new line |
+| `Backspace` | Delete character before cursor |
+| `Delete` | Delete character after cursor |
+| `←` `→` `↑` `↓` | Move cursor one character / line |
+| `Ctrl+←` | Move cursor one word left |
+| `Ctrl+→` | Move cursor one word right |
+| `Home` | Move to start of line |
+| `End` | Move to end of line |
+| `Ctrl+Z` | Undo |
+| `Ctrl+Y` | Redo |
+| `Ctrl+S` | Save file (prompts for path on new documents) |
+| `Ctrl+N` | New empty document (prompts to save if dirty) |
+| `Ctrl+O` | Open a different file (prompts to save if dirty) |
+| `Ctrl+P` | Toggle the live preview pane |
+| `Ctrl+Q` | Quit (prompts to save if there are unsaved changes) |
 
 ## Viewer mode
 
