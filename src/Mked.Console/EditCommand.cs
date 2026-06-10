@@ -56,6 +56,9 @@ public sealed class EditCommand : AsyncCommand<EditSettings>
         int lastH = System.Console.WindowHeight;
         int h = lastH;
 
+        string? highlightedBuffer = null;
+        IReadOnlyList<StyledSpan> cachedSpans = [];
+
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
         System.Console.CursorVisible = false;
@@ -93,9 +96,14 @@ public sealed class EditCommand : AsyncCommand<EditSettings>
                         topLineIndex = cursorRow - editorH + 1;
                     topLineIndex = Math.Max(0, topLineIndex);
 
-                    IReadOnlyList<StyledSpan> spans = RunHighlightPipeline(state.Buffer, layers);
+                    if (!ReferenceEquals(state.Buffer, highlightedBuffer))
+                    {
+                        cachedSpans = RunHighlightPipeline(state.Buffer, layers);
+                        highlightedBuffer = state.Buffer;
+                    }
+
                     System.Console.Write("\x1B[?2026h\x1B[H");
-                    AnsiConsole.Write(new ErasedWidget(BuildWidget(state, spans, topLineIndex, h, session.SplitEnabled)));
+                    AnsiConsole.Write(new ErasedWidget(BuildWidget(state, cachedSpans, topLineIndex, h, session.SplitEnabled)));
                     System.Console.Write("\x1B[?2026l");
                     dirty = false;
                 }

@@ -275,6 +275,7 @@ public sealed class EditorState
     private void SetBufferInternal(string buffer)
     {
         Buffer = buffer;
+        Cursor = CursorNavigation.Clamp(buffer, Cursor);
         _isDirty = buffer != _cleanBuffer;
     }
 
