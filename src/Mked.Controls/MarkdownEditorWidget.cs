@@ -60,14 +60,18 @@ public sealed class MarkdownEditorWidget : IRenderable
             bool isCursorLine = (lineIdx + 1) == _cursor.Line;
             int cursorColIndex = _cursor.Column - 1;
 
+            // Clip to maxWidth: an over-wide line would wrap in the terminal, making the
+            // frame taller than the viewport and scrolling earlier rows off-screen.
+            int visibleLength = Math.Min(line.Length, maxWidth);
+
             int pos = 0;
-            while (pos <= line.Length)
+            while (pos <= visibleLength)
             {
                 bool isCursorPos = isCursorLine && pos == cursorColIndex;
 
-                if (pos == line.Length)
+                if (pos == visibleLength)
                 {
-                    if (isCursorPos)
+                    if (isCursorPos && line.Length < maxWidth)
                         yield return new Segment(" ", Style.Plain.Decoration(Decoration.Invert));
                     break;
                 }
@@ -82,7 +86,7 @@ public sealed class MarkdownEditorWidget : IRenderable
                 }
 
                 int runEnd = pos + 1;
-                while (runEnd < line.Length)
+                while (runEnd < visibleLength)
                 {
                     bool isRunCursorPos = isCursorLine && runEnd == cursorColIndex;
                     if (isRunCursorPos)

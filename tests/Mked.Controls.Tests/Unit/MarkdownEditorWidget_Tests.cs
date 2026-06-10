@@ -97,6 +97,35 @@ public sealed class MarkdownEditorWidget_Tests
         output.Should().NotContain("line3");
     }
 
+    // ─── Horizontal clipping ──────────────────────────────────────────────────
+
+    [Fact]
+    public void LineWiderThanMaxWidth_IsClippedToMaxWidth()
+    {
+        var widget = new MarkdownEditorWidget(
+            buffer: new string('a', 200) + "\nshort",
+            cursor: (2, 1),
+            highlights: Array.Empty<StyledSpan>());
+
+        string output = Write(widget);
+
+        foreach (string row in output.Split('\n'))
+            row.Length.Should().BeLessThanOrEqualTo(80);
+    }
+
+    [Fact]
+    public void CursorAtEndOfFullWidthLine_DoesNotEmitInvertedSpaceBeyondMaxWidth()
+    {
+        var widget = new MarkdownEditorWidget(
+            buffer: new string('a', 80),
+            cursor: (1, 81),
+            highlights: Array.Empty<StyledSpan>());
+
+        string output = Write(widget);
+
+        output.TrimEnd('\n').Length.Should().Be(80);
+    }
+
     // ─── Empty buffer ─────────────────────────────────────────────────────────
 
     [Fact]

@@ -58,7 +58,6 @@ public sealed class EditCommand : AsyncCommand<EditSettings>
 
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
-        System.Console.Clear();
         System.Console.CursorVisible = false;
         bool dirty = true;
 
@@ -66,7 +65,7 @@ public sealed class EditCommand : AsyncCommand<EditSettings>
         {
             while (!session.Cancelled && !cts.Token.IsCancellationRequested)
             {
-                if (System.Console.KeyAvailable)
+                while (System.Console.KeyAvailable)
                 {
                     var key = System.Console.ReadKey(intercept: true);
                     EditorAction action = MapKey(key);
@@ -88,15 +87,16 @@ public sealed class EditCommand : AsyncCommand<EditSettings>
                 {
                     int editorH = h - 1;
                     int cursorRow = state.Cursor.Line - 1;
-                    if (cursorRow < topLineIndex)
-                        topLineIndex = cursorRow;
+                    if (cursorRow - 1 < topLineIndex)
+                        topLineIndex = Math.Max(0, cursorRow - 1);
                     else if (cursorRow >= topLineIndex + editorH)
                         topLineIndex = cursorRow - editorH + 1;
                     topLineIndex = Math.Max(0, topLineIndex);
 
                     IReadOnlyList<StyledSpan> spans = RunHighlightPipeline(state.Buffer, layers);
-                    System.Console.Clear();
-                    AnsiConsole.Write(BuildWidget(state, spans, topLineIndex, h, session.SplitEnabled));
+                    System.Console.Write("\x1B[?2026h\x1B[H");
+                    AnsiConsole.Write(new ErasedWidget(BuildWidget(state, spans, topLineIndex, h, session.SplitEnabled)));
+                    System.Console.Write("\x1B[?2026l");
                     dirty = false;
                 }
 
@@ -174,36 +174,28 @@ public sealed class EditCommand : AsyncCommand<EditSettings>
             }
 
             case EditorAction.MoveCursor(Direction.Left):
-                state.MoveCursorLeft();
-                return true;
+            { var p = state.Cursor; state.MoveCursorLeft(); return state.Cursor != p; }
 
             case EditorAction.MoveCursor(Direction.Right):
-                state.MoveCursorRight();
-                return true;
+            { var p = state.Cursor; state.MoveCursorRight(); return state.Cursor != p; }
 
             case EditorAction.MoveCursor(Direction.Up):
-                state.MoveCursorUp();
-                return true;
+            { var p = state.Cursor; state.MoveCursorUp(); return state.Cursor != p; }
 
             case EditorAction.MoveCursor(Direction.Down):
-                state.MoveCursorDown();
-                return true;
+            { var p = state.Cursor; state.MoveCursorDown(); return state.Cursor != p; }
 
             case EditorAction.MoveWordCursor(Direction.Left):
-                state.MoveCursorWordLeft();
-                return true;
+            { var p = state.Cursor; state.MoveCursorWordLeft(); return state.Cursor != p; }
 
             case EditorAction.MoveWordCursor(Direction.Right):
-                state.MoveCursorWordRight();
-                return true;
+            { var p = state.Cursor; state.MoveCursorWordRight(); return state.Cursor != p; }
 
             case EditorAction.MoveToLineStart:
-                state.MoveCursorToLineStart();
-                return true;
+            { var p = state.Cursor; state.MoveCursorToLineStart(); return state.Cursor != p; }
 
             case EditorAction.MoveToLineEnd:
-                state.MoveCursorToLineEnd();
-                return true;
+            { var p = state.Cursor; state.MoveCursorToLineEnd(); return state.Cursor != p; }
 
             case EditorAction.UndoAction:
                 if (state.CanUndo)
@@ -391,6 +383,28 @@ public sealed class EditCommand : AsyncCommand<EditSettings>
     // trailing newline, keeping total height == top.height + 1 + bottom.height.
     // Avoids Rows, which emits a trailing LineBreak that pushes rendered height past
     // the terminal boundary and causes LiveDisplay to scroll on every frame.
+    // Wraps any renderable and inserts \x1B[K (erase-to-EOL) before each line break and
+    // at the end, clearing leftover characters from longer previous renders without a full
+    // screen clear (which causes flicker).
+    private sealed class ErasedWidget(IRenderable inner) : IRenderable
+    {
+        private static readonly Segment Erase = new("\x1B[K", Style.Plain);
+
+        public Measurement Measure(RenderOptions options, int maxWidth) =>
+            inner.Measure(options, maxWidth);
+
+        public IEnumerable<Segment> Render(RenderOptions options, int maxWidth)
+        {
+            foreach (Segment seg in inner.Render(options, maxWidth))
+            {
+                if (seg.IsLineBreak)
+                    yield return Erase;
+                yield return seg;
+            }
+            yield return Erase;
+        }
+    }
+
     private sealed class VerticalLayout(IRenderable top, IRenderable bottom) : IRenderable
     {
         public Measurement Measure(RenderOptions options, int maxWidth) =>
