@@ -1,7 +1,6 @@
-using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 
-namespace Mked.Domain;
+namespace Mked.Controls;
 
 /// <summary>Annotates bold and italic emphasis spans.</summary>
 public sealed class EmphasisHighlightLayer : IHighlightLayer
@@ -9,7 +8,7 @@ public sealed class EmphasisHighlightLayer : IHighlightLayer
     /// <inheritdoc/>
     public IEnumerable<HighlightSpan> Annotate(string source, MarkdownDocument document)
     {
-        foreach (Block block in document.Blocks)
+        foreach (Block block in document)
         {
             foreach (HighlightSpan span in WalkBlock(source, block))
                 yield return span;

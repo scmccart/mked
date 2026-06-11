@@ -1,4 +1,4 @@
-namespace Mked.Domain;
+namespace Mked.Controls;
 
 /// <summary>Pure string operations on a newline-delimited text buffer.</summary>
 public static class BufferOperations

@@ -1,6 +1,4 @@
-using Moq;
-
-namespace Mked.Domain.Tests;
+namespace Mked.Controls.Tests;
 
 public class EditorState_Insert_Tests
 {

@@ -1,29 +1,35 @@
 # Epic 05 — Markdown Editor: Technical Design
 
 > **Epic**: [`docs/epics/05-markdown-editor.md`](../../docs/epics/05-markdown-editor.md)
-> **Status**: Draft
+> **Status**: Implemented (see refactoring note below)
 > **Date**: 2026-06-03
 
 ---
 
 ## Goals
 
-1. Extend `EditorState` in `Mked.Domain` with character-level `Insert` and `Delete` operations
-   backed by pure, stateless `BufferOperations` helper functions, so callers no longer
-   reconstruct the full buffer string externally.
-2. Add clamped cursor-movement as pure functions in `CursorNavigation` (Domain), used by
-   `EditorState` wrapper methods that push to the undo stack only for buffer mutations — not
-   cursor moves.
-3. Define `IHighlightLayer`, `HighlightSpan`, and `HighlightKind` in `Mked.Domain`; implement
-   five stateless highlight layer classes (heading, emphasis, link, frontmatter, code fence) as
-   pure annotators.
-4. Build `MarkdownEditorWidget` and `EditorStatusLine` in `Mked.Controls` — both are
-   `IRenderable` types that accept pre-computed data and carry no Domain references.
-5. Implement `EditCommand` and `EditSettings` in `Mked.Console` — the `mked edit` entry point.
-   Separates key-to-action mapping (pure) from side-effecting application (imperative shell);
-   uses `Result<T, MkedError>` (ROP) for all file I/O.
-6. Add test coverage: `Mked.Domain.Tests` for new buffer and navigation functions; `Mked.Controls.Tests`
-   for editor widget and status line rendering.
+1. Build pure, stateless `BufferOperations` helper functions (Insert, Delete, ToOffset,
+   FromOffset) so callers no longer reconstruct the full buffer string externally.
+2. Add clamped cursor-movement as pure functions in `CursorNavigation`, used by `EditorState`
+   wrapper methods that push to the undo stack only for buffer mutations — not cursor moves.
+3. Define `IHighlightLayer`, `HighlightSpan`, and `HighlightKind`; implement five stateless
+   highlight layer classes (heading, emphasis, link, frontmatter, code fence) as pure annotators.
+4. Build `MarkdownEditorWidget` and `EditorStatusLine` in `Mked.Controls` — both are `IRenderable`
+   types that accept pre-computed data.
+5. Build `MarkdownEditor` in `Mked.Controls` — a self-contained, embeddable interactive control
+   that owns editing state, the highlight pipeline, undo/redo, scroll, and input dispatch.
+6. Implement `EditCommand` and `EditSettings` in `Mked.Console` — the `mked edit` entry point
+   using `AnsiConsole.Live + Layout`, routing input through `MarkdownEditor.HandleKey`.
+7. Add test coverage: `Mked.Controls.Tests` for buffer and navigation functions, editor state,
+   highlight layers, widget and status line rendering, and the ArchUnitNET rule.
+
+> **Refactoring note (feat/epic-5-refactor):** The editor machinery — `EditorState`,
+> `IEditorObserver`, `CursorPosition`, `TextRange`, `BufferOperations`, `CursorNavigation`,
+> `IHighlightLayer`, `HighlightSpan`, `HighlightKind`, the five layer implementations, and
+> `HighlightMapper` — was initially placed in `Mked.Domain` but was later moved to `Mked.Controls`
+> and the `NewDocumentUseCase` use case was deleted. These are editor-control implementation
+> details, not business domain types. The move keeps `Mked.Controls` fully self-contained and
+> preserves the "Controls does not reference Domain" ArchUnitNET rule.
 
 ## Non-Goals
 
@@ -44,16 +50,16 @@
 
 | Layer | Project | Changes |
 |-------|---------|---------|
-| Domain | `Mked.Domain` | New `BufferOperations`, `CursorNavigation`, `IHighlightLayer`, `HighlightSpan`, `HighlightKind`, five layer implementations; `EditorState` gains typed `Insert`/`Delete` and cursor-movement methods |
-| Application | `Mked.Application` | Not touched — `OpenFileUseCase`, `SaveFileUseCase`, `NewDocumentUseCase` already cover file operations |
-| Controls | `Mked.Controls` | New `StyledSpan`, `MarkdownEditorWidget`, `EditorStatusLine` |
-| Presentation | `Mked.Console` | New `EditSettings`, `EditCommand`, `EditorAction`, `HighlightMapper`; `Program.cs` wired |
+| Domain | `Mked.Domain` | Unchanged — only genuine domain types remain (`MkedError`, `Result`, `Maybe`, `ViewerState`, file ports, `MarkdownDocument`) |
+| Application | `Mked.Application` | `NewDocumentUseCase` removed (host inlines `new MarkdownEditor("")`); `OpenFileUseCase` and `SaveFileUseCase` unchanged |
+| Controls | `Mked.Controls` | All editor machinery lives here: `CursorPosition`, `TextRange`, `BufferOperations`, `CursorNavigation`, `EditorState`, `IEditorObserver`, `IHighlightLayer`, `HighlightSpan`, `HighlightKind`, five layer implementations, `HighlightMapper`, `StyledSpan`, `MarkdownEditorWidget`, `EditorStatusLine`; new embeddable `MarkdownEditor` control |
+| Presentation | `Mked.Console` | `EditSettings`, `EditCommand` (rewritten to `AnsiConsole.Live + Layout` using `MarkdownEditor`); `Program.cs` wired |
 
 **Controls independence constraint** — `Mked.Controls` must not reference `Mked.Domain`.
-`StyledSpan` is a Spectre.Console-native value type (int offsets + `Style`). `EditCommand` in
-`Mked.Console` translates Domain's `HighlightSpan` (with `TextRange` + `HighlightKind`) to
-`StyledSpan` via `HighlightMapper`. The widget's cursor position is expressed as `(int Line, int
-Column)` — a plain value tuple — rather than `CursorPosition` from Domain.
+The editor machinery types (`EditorState`, cursor/buffer/navigation helpers, highlight layers)
+are control-implementation details, not business domain. They live in `Mked.Controls` and are
+fully self-contained there. The ArchUnitNET rule `Controls_DoesNotReferenceDomain` remains
+green because no `Mked.Domain.*` type is referenced from `Mked.Controls`.
 
 **AOT/Trim** — All new types use BCL and Spectre.Console APIs. Markdig AST traversal in the
 highlight layers is already trim-safe. No reflection, no `dynamic`, no `Activator`.
@@ -68,56 +74,54 @@ This epic applies the functional core / imperative shell principle explicitly:
 |-------|---------------|--------|
 | `BufferOperations` | **Functional core** | Pure functions: `(string, CursorPosition, string) → string` — no state, fully testable |
 | `CursorNavigation` | **Functional core** | Pure functions: `(string, CursorPosition) → CursorPosition` |
-| `IHighlightLayer` implementations | **Functional core** | `(string, MarkdownDocument) → IEnumerable<HighlightSpan>` — stateless |
+| `IHighlightLayer` implementations | **Functional core** | `(string, Markdig.Syntax.MarkdownDocument) → IEnumerable<HighlightSpan>` — stateless |
 | `HighlightMapper` | **Functional core** | Pure span conversion |
-| `MapKey` in `EditCommand` | **Functional core** | `ConsoleKeyInfo → EditorAction` — pure, switch-expression |
+| `MarkdownEditor.HandleKey` | **Functional core** | Translates `ConsoleKeyInfo` to state mutation; returns `bool` (dirty) |
 | `EditorState` | Mutable coordinator | Calls functional core, maintains undo stacks, fires observer events |
-| `EditCommand` poll loop | **Imperative shell** | Reads keyboard, writes terminal, calls use cases |
+| `MarkdownEditor` | Control façade | Owns `EditorState`, highlight cache, scroll; exposes `IRenderable` and `HandleKey` |
+| `EditCommand` poll loop | **Imperative shell** | Reads keyboard, routes to `editor.HandleKey`, calls use cases, drives `liveCtx.UpdateTarget` |
 | `SaveFileUseCase` / `OpenFileUseCase` | Railway (ROP) | Return `Result<T, MkedError>`; shell pattern-matches the result |
 
 ---
 
 ## Key Types and Interfaces
 
-### New — `Mked.Domain`
+### `Mked.Domain` — unchanged by this epic
+
+Domain retains only genuine business-domain types: `MkedError`, `Result<T,E>`, `Maybe<T>`,
+`Unit`, `ViewerState`, `ViewportAnchor`, `MarkdownDocument`, and the file/input port interfaces.
+The editor machinery described below lives in `Mked.Controls`.
+
+### New — `Mked.Controls` (editor machinery + controls)
 
 | Type | Kind | Purpose |
 |------|------|---------|
+| `CursorPosition` | readonly record struct | 1-based `(int Line, int Column)` cursor coordinate |
+| `TextRange` | readonly record struct | `(CursorPosition Start, CursorPosition End)` text span |
+| `BufferOperations` | static class | Pure: `Insert`, `Delete`, `ToOffset`, `FromOffset` |
+| `CursorNavigation` | static class | Pure: `MoveLeft`, `MoveRight`, `MoveUp`, `MoveDown`, `MoveWordLeft`, `MoveWordRight`, `MoveToLineStart`, `MoveToLineEnd`, `Clamp` |
+| `IEditorObserver` | interface | `OnBufferChanged(string)` / `OnCursorMoved(CursorPosition)` |
+| `EditorState` | sealed class | Mutable text buffer + cursor + undo/redo stacks; notifies observers |
 | `HighlightKind` | enum | `Heading`, `Bold`, `Italic`, `InlineCode`, `LinkText`, `LinkUrl`, `FrontmatterBlock`, `CodeFence` |
 | `HighlightSpan` | readonly record struct | `(TextRange Range, HighlightKind Kind)` — source span + category |
-| `IHighlightLayer` | interface | `IEnumerable<HighlightSpan> Annotate(string source, MarkdownDocument document)` |
+| `IHighlightLayer` | interface | `IEnumerable<HighlightSpan> Annotate(string source, Markdig.Syntax.MarkdownDocument document)` |
 | `HeadingHighlightLayer` | sealed class | Annotates `#` markers and heading text |
 | `EmphasisHighlightLayer` | sealed class | Annotates `*`/`**`/`_`/`__` delimiters |
 | `LinkHighlightLayer` | sealed class | Annotates `[text]` as `LinkText` and `(url)` as `LinkUrl` |
 | `FrontMatterDimLayer` | sealed class | Annotates entire YAML frontmatter block as `FrontmatterBlock` |
-| `CodeFenceLayer` | sealed class | Annotates fenced code block bodies as `CodeFence` (no inner highlighting) |
-| `BufferOperations` | static class | Pure: `Insert`, `Delete`, `ToOffset`, `FromOffset` |
-| `CursorNavigation` | static class | Pure: `MoveLeft`, `MoveRight`, `MoveUp`, `MoveDown`, `MoveWordLeft`, `MoveWordRight`, `MoveToLineStart`, `MoveToLineEnd`, `Clamp` |
-
-### Modified — `Mked.Domain`
-
-| Type | Change | Reason |
-|------|--------|--------|
-| `EditorState` | New `void Insert(CursorPosition, string)` and `void Delete(TextRange)` methods that delegate to `BufferOperations` and push to the undo stack | Atomic buffer mutations without external string reconstruction |
-| `EditorState` | New `void MoveCursorLeft/Right/Up/Down/WordLeft/WordRight/ToLineStart/ToLineEnd()` methods that delegate to `CursorNavigation` and call `SetCursorInternal` — these do **not** push to the undo stack (cursor moves are not undoable) | Clamped cursor movement |
-| `EditorState` | `UpdateBuffer(string)` is retained for compatibility but callers should prefer `Insert`/`Delete` | Non-breaking |
-
-### New — `Mked.Controls`
-
-| Type | Kind | Purpose |
-|------|------|---------|
+| `CodeFenceLayer` | sealed class | Annotates fenced code block bodies as `CodeFence` |
+| `HighlightMapper` | static class | `IReadOnlyList<StyledSpan> Map(IEnumerable<HighlightSpan>, string buffer)` |
 | `StyledSpan` | readonly record struct | `(int StartOffset, int Length, Style SpectreStyle)` — Spectre-native highlight span |
-| `MarkdownEditorWidget` | sealed class, `IRenderable` | Raw text buffer with visible block cursor and `StyledSpan` overlays, clipped to viewport |
+| `MarkdownEditorWidget` | sealed class, `IRenderable` | Passive renderer: raw text buffer with block cursor and `StyledSpan` overlays, clipped to viewport |
 | `EditorStatusLine` | sealed class, `IRenderable` | One-line bar: `Ln {line}, Col {col}   ● (dirty)   {n} words` |
+| **`MarkdownEditor`** | **sealed class, `IRenderable`** | **Embeddable interactive control: owns `EditorState`, highlight pipeline, scroll, `HandleKey`, `BufferChanged` event** |
 
 ### New — `Mked.Console`
 
 | Type | Kind | Purpose |
 |------|------|---------|
 | `EditSettings` | sealed class, `CommandSettings` | Optional `[path]` argument; `--split` flag |
-| `EditCommand` | sealed class, `AsyncCommand<EditSettings>` | `mked edit` entry point; drives editor loop |
-| `EditorAction` | abstract record | Discriminated union: `InsertChar`, `DeleteBackward`, `DeleteForward`, `MoveCursor`, `MoveWordCursor`, `MoveToLineStart`, `MoveToLineEnd`, `UndoAction`, `RedoAction`, `SaveFile`, `NewFile`, `OpenFile`, `TogglePreview`, `Quit`, `None` |
-| `HighlightMapper` | static class | `IReadOnlyList<StyledSpan> Map(IEnumerable<HighlightSpan>, string buffer)` |
+| `EditCommand` | sealed class, `AsyncCommand<EditSettings>` | `mked edit` entry point; `AnsiConsole.Live + Layout` loop routing keys through `MarkdownEditor.HandleKey` |
 
 ---
 
@@ -320,6 +324,52 @@ frontmatter is not excluded in v1).
 
 ---
 
+## `MarkdownEditor` Control API
+
+`MarkdownEditor` is the embeddable interactive control that lives in `Mked.Controls`. It owns
+the full editing lifecycle and exposes a clean host API:
+
+```csharp
+public sealed class MarkdownEditor : IRenderable, IEditorObserver
+{
+    public MarkdownEditor(string initialBuffer = "");
+
+    // Input dispatch — returns true if anything changed (host should redraw).
+    // Returns false for unhandled host-level keys (Save, Quit, Open, New, TogglePreview).
+    public bool HandleKey(ConsoleKeyInfo key);
+
+    // Buffer and cursor access
+    public string Buffer { get; }
+    public (int Line, int Column) Cursor { get; }
+    public bool IsDirty { get; }
+    public int WordCount { get; }
+    public bool CanUndo { get; }
+    public bool CanRedo { get; }
+
+    // Document lifecycle
+    public void LoadDocument(string buffer);   // reset buffer, undo/redo, cursor (1,1), clean baseline, scroll
+    public void MarkClean();                   // call after a successful Save
+
+    // Layout integration
+    public bool HasFocus { get; set; }          // gates the block cursor; Ctrl+Tab flips focus in split-view
+    public int? ViewportHeight { get; set; }    // set by host before each UpdateTarget call
+    public event Action<string>? BufferChanged; // drives the preview pane
+    public IRenderable StatusLine();            // bundled EditorStatusLine snapshot
+
+    public Measurement Measure(RenderOptions options, int maxWidth);
+    public IEnumerable<Segment> Render(RenderOptions options, int maxWidth);
+}
+```
+
+`HandleKey` absorbs all editing/navigation/undo-redo keys internally. Host-level keys (Ctrl+S,
+Ctrl+Q, Ctrl+N, Ctrl+O, Ctrl+P) return `false` so the host can handle them.
+
+`Render` uses `ViewportHeight` to keep the cursor row visible (scroll clamp), then delegates
+to `MarkdownEditorWidget`. The highlight pipeline runs only when `Buffer` changes by reference
+(ReferenceEquals cache) via the `IEditorObserver.OnBufferChanged` callback.
+
+---
+
 ## `EditCommand` Architecture (Imperative Shell)
 
 ```
@@ -327,97 +377,76 @@ frontmatter is not excluded in v1).
 │  EditCommand.ExecuteAsync  (imperative shell)                     │
 │                                                                   │
 │  1. Load file or new doc via use case  →  Result<> ROP           │
-│  2. Create EditorState, subscribe preview observer               │
-│  3. Poll loop (LiveDisplay):                                      │
-│     a. Console.ReadKey          (impure — terminal I/O)          │
-│     b. MapKey(key)              (PURE  — returns EditorAction)   │
-│     c. ApplyAction:                                               │
-│        Insert/Delete/Move  →  EditorState methods                 │
-│        Undo / Redo         →  EditorState.Undo / Redo            │
-│        Save                →  SaveFileUseCase  →  Result<> ROP   │
-│        Quit                →  dirty-check prompt, then exit      │
-│     d. MarkdownDocument.Parse(state.Buffer)   (pure)             │
-│     e. layers.SelectMany(l => l.Annotate(...)) (pure per layer)  │
-│     f. HighlightMapper.Map(spans, buffer)      (pure)            │
-│     g. liveCtx.UpdateTarget(BuildLayout(...))  (impure)          │
+│  2. Create MarkdownEditor; wire BufferChanged → previewSource    │
+│  3. Outer loop (runs after each host-action prompt):              │
+│     a. AnsiConsole.Live(BuildLayout(...)).StartAsync(...)         │
+│     b. Inside: Console.ReadKey  (impure — terminal I/O)          │
+│        → editor.HandleKey(key)                                    │
+│            true  → dirty = true                                   │
+│            false → host switch (Ctrl+S/Q/N/O/P):                 │
+│               S/Q/N/O → set pendingAction, cancel inner CTS      │
+│               P       → toggle splitEnabled, dirty = true        │
+│     c. On resize → editor.ViewportHeight = newH − 1; dirty       │
+│     d. dirty → liveCtx.UpdateTarget(BuildLayout(...))  (impure)  │
+│  4. After live loop: handle pendingAction (prompts + use cases)   │
+│     SaveAsync / HandleQuitAsync / HandleNewAsync / HandleOpenAsync│
+│  5. Repeat until session.Cancelled                                │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
-### Key mapping (pure)
+### Key routing
 
-```csharp
-private static EditorAction MapKey(ConsoleKeyInfo key) => key switch
-{
-    { Key: ConsoleKey.Z,         Modifiers: ConsoleModifiers.Control }  => new EditorAction.UndoAction(),
-    { Key: ConsoleKey.Y,         Modifiers: ConsoleModifiers.Control }  => new EditorAction.RedoAction(),
-    { Key: ConsoleKey.S,         Modifiers: ConsoleModifiers.Control }  => new EditorAction.SaveFile(),
-    { Key: ConsoleKey.N,         Modifiers: ConsoleModifiers.Control }  => new EditorAction.NewFile(),
-    { Key: ConsoleKey.O,         Modifiers: ConsoleModifiers.Control }  => new EditorAction.OpenFile(),
-    { Key: ConsoleKey.P,         Modifiers: ConsoleModifiers.Control }  => new EditorAction.TogglePreview(),
-    { Key: ConsoleKey.Q,         Modifiers: ConsoleModifiers.Control }  => new EditorAction.Quit(),
-    { Key: ConsoleKey.LeftArrow, Modifiers: ConsoleModifiers.Control }  => new EditorAction.MoveWordCursor(Direction.Left),
-    { Key: ConsoleKey.RightArrow,Modifiers: ConsoleModifiers.Control }  => new EditorAction.MoveWordCursor(Direction.Right),
-    { Key: ConsoleKey.LeftArrow }                                        => new EditorAction.MoveCursor(Direction.Left),
-    { Key: ConsoleKey.RightArrow }                                       => new EditorAction.MoveCursor(Direction.Right),
-    { Key: ConsoleKey.UpArrow }                                          => new EditorAction.MoveCursor(Direction.Up),
-    { Key: ConsoleKey.DownArrow }                                        => new EditorAction.MoveCursor(Direction.Down),
-    { Key: ConsoleKey.Home }                                             => new EditorAction.MoveToLineStart(),
-    { Key: ConsoleKey.End }                                              => new EditorAction.MoveToLineEnd(),
-    { Key: ConsoleKey.Backspace }                                        => new EditorAction.DeleteBackward(),
-    { Key: ConsoleKey.Delete }                                           => new EditorAction.DeleteForward(),
-    { KeyChar: char c } when !char.IsControl(c)                          => new EditorAction.InsertChar(c),
-    _                                                                    => new EditorAction.None(),
-};
-```
-
-### File operations (ROP)
-
-```csharp
-// Save: fallible path → ROP
-private async Task<Result<Unit, MkedError>> SaveAsync(
-    ref string? filePath, string content)
-{
-    if (filePath is null)
-        filePath = AnsiConsole.Ask<string>("Save as: ");  // impure — only at the boundary
-
-    return await _saveFile.ExecuteAsync(filePath, content);
-}
-
-// Callers pattern-match the result; errors surface as a status-line message:
-var saveResult = await SaveAsync(ref _filePath, state.Buffer);
-if (saveResult is Result<Unit, MkedError>.Err(var err))
-    _statusMessage = FormatError(err);  // displayed on next render frame
-```
+The host dispatches each key to `editor.HandleKey(key)`. Unhandled keys are pattern-matched
+by the host in a `switch (key)` block for file-operation bindings.
 
 ### Split-pane layout
 
-When `settings.Split` is `true` (or toggled on via `Ctrl+P`), `EditCommand` builds a
-Spectre.Console `Layout` with two panes:
+`BuildLayout` returns a Spectre.Console `Layout` for both split and non-split modes:
 
 ```
-┌──────────────────────┬──────────────────────┐
-│  MarkdownEditorWidget│  MarkdownViewer       │
-│  (editor pane)       │  (preview pane)       │
-└──────────────────────┴──────────────────────┘
-│  EditorStatusLine (full width)               │
-└──────────────────────────────────────────────┘
+// Split mode
+Layout("Root") → SplitRows(
+  Layout("Main") → SplitColumns(
+    Layout("Editor")   ← editor (IRenderable)
+    Layout("Preview")  ← MarkdownViewer(previewSource)
+  ),
+  Layout("Status").Size(1) ← editor.StatusLine()
+)
+
+// Non-split mode
+Layout("Root") → SplitRows(
+  Layout("Editor"),
+  Layout("Status").Size(1)
+)
 ```
 
-The preview pane is a `MarkdownViewer` reconstructed from `state.Buffer` each time
-`OnBufferChanged` fires. `MarkdownViewer` is an existing Epic 04 type — no new Controls
-types are needed for the preview. The status line spans the full terminal width beneath both
-panes.
+`editor.ViewportHeight = AnsiConsole.Profile.Height - 1` is set before each outer loop
+iteration; the preview's `ViewportHeight` is read from `editor.ViewportHeight`.
 
-### Observer wiring
+### Preview wiring
 
-`EditCommand` subscribes two observers to `EditorState`:
+```csharp
+string previewSource = editor.Buffer;
+editor.BufferChanged += md => previewSource = md;
+// BuildLayout creates new MarkdownViewer(previewSource) on each dirty frame.
+```
 
-1. **`ReparseObserver`** (inline closure) — calls `MarkdownDocument.Parse(newBuffer)` on each
-   `OnBufferChanged`; stores the result for the next highlight pass.
-2. **`WordCountObserver`** (inline closure) — recomputes word count from the new buffer on
-   `OnBufferChanged`; stores for status line.
+### File operations (prompt-outside-live)
 
-Cursor changes (`OnCursorMoved`) are consumed directly in the render step from `state.Cursor`.
+Host-level file operations run **after** `StartAsync` returns, with the live display stopped.
+This ensures `AnsiConsole.Ask` / `SelectionPrompt` render correctly without conflicting with
+the live display — resolving Open Question #4.
+
+```csharp
+// After StartAsync returns, pendingAction drives the operation:
+case HostAction.Save:
+    if (session.FilePath is null)
+        session.FilePath = AnsiConsole.Ask<string>("Save as: ");
+    var result = await new SaveFileUseCase(...).ExecuteAsync(session.FilePath, editor.Buffer);
+    if (result is Result<Unit, MkedError>.Err(var err)) AnsiConsole.MarkupLine(...);
+    else editor.MarkClean();
+    break;
+```
 
 ---
 
@@ -426,27 +455,25 @@ Cursor changes (`OnCursorMoved`) are consumed directly in the render step from `
 ### Startup
 
 1. `EditSettings.Path` is supplied → `OpenFileUseCase.ExecuteAsync(path)`:
-   - `Ok(file)` → `EditorState state = new(file.Source); _filePath = path;`
+   - `Ok(file)` → `editor.LoadDocument(file.Source); session.FilePath = path;`
    - `Err(e)` → `AnsiConsole.MarkupLine("[red bold]Error:[/] …")`, return exit code 1.
-2. `EditSettings.Path` is `null` → `EditorState state = NewDocumentUseCase.Execute(); _filePath = null;`
-3. Highlight pipeline instantiated once: `IHighlightLayer[] layers = [new HeadingHighlightLayer(), ...]`.
-4. `AnsiConsole.Live(initialLayout).StartAsync(...)` enters the poll loop.
+2. `EditSettings.Path` is `null` → `new MarkdownEditor()` with empty buffer; `session.FilePath = null`.
+3. `editor.BufferChanged += md => previewSource = md;` wired once.
+4. `AnsiConsole.Live(BuildLayout(...)).StartAsync(...)` enters the poll loop.
 
 ### Per-keypress (inside `LiveDisplay`)
 
 1. `ConsoleKeyInfo key = Console.ReadKey(intercept: true)` — impure.
-2. `EditorAction action = MapKey(key)` — pure.
-3. `ApplyAction(action, state)` — imperative, may call use cases with ROP.
-4. `var doc = MarkdownDocument.Parse(state.Buffer)` — pure, incremental re-parse.
-5. `var spans = layers.SelectMany(l => l.Annotate(state.Buffer, doc)).ToList()` — pure.
-6. `var styled = HighlightMapper.Map(spans, state.Buffer)` — pure.
-7. `liveCtx.UpdateTarget(BuildLayout(state, styled, settings))` — impure.
+2. `editor.HandleKey(key)` — pure editor dispatch (returns `false` for host keys).
+3. If `HandleKey` returns `false`, host `switch (key)` sets `session.PendingAction` and cancels CTS.
+4. `liveCtx.UpdateTarget(BuildLayout(editor, previewSource, session))` — impure; `MarkdownEditor.Render` runs the highlight pipeline internally and delegates to `MarkdownEditorWidget`.
 
 ### On terminal resize
 
-`EditCommand` polls terminal dimensions on each loop tick. When width or height changes:
-- Rebuild `MarkdownEditorWidget` with new `ViewportHeight`; `topLineIndex` is preserved.
-- Rebuild `MarkdownViewer` (in split mode) — clears its width-dependent render cache.
+`EditCommand` polls `AnsiConsole.Profile.Height` on each outer loop iteration.
+When height changes, `editor.ViewportHeight` is updated before calling `StartAsync` again.
+The `MarkdownEditor` derives scroll position from `ViewportHeight` inside `Render`; the
+preview's `ViewportHeight` tracks `editor.ViewportHeight` automatically.
 
 ---
 
@@ -467,8 +494,9 @@ No new `MkedError` variants are introduced.
 
 | Test project | What is covered |
 |-------------|----------------|
-| `Mked.Domain.Tests` | `BufferOperations.Insert` / `Delete` (insert at start, EOL, multi-line; delete across lines); `CursorNavigation` (all directions, word-boundary jumps, clamp-to-empty-buffer); each `IHighlightLayer` implementation (known input → correct `TextRange` set); `EditorState.Insert` and `Delete` fire `OnBufferChanged`; cursor-movement methods do **not** push to undo stack |
-| `Mked.Controls.Tests` | `MarkdownEditorWidget` renders visible lines, applies `StyledSpan` colour, cursor renders as invert block, viewport clips correctly; `EditorStatusLine` shows correct dirty/clean indicator, word count, and line/col; ArchUnitNet: `Mked.Controls` has no reference to `Mked.Domain` |
+| `Mked.Controls.Tests` | `CursorPosition` value semantics; `TextRange` boundary checks; `BufferOperations.Insert` / `Delete` (start, EOL, multi-line, across lines); `CursorNavigation` (all directions, word-boundary jumps, clamp-to-empty-buffer); each `IHighlightLayer` (known input → correct `HighlightSpan` set); `EditorState` construction / insert / delete / cursor movement / undo-redo / observer notifications; `MarkdownEditorWidget` renders visible lines, applies `StyledSpan` colour, cursor renders as invert block; `EditorStatusLine` shows dirty/clean indicator, word count, line/col; ArchUnitNet: `Mked.Controls` has no reference to `Mked.Domain` |
+| `Mked.Domain.Tests` | Domain types only (no editor machinery has remained in Domain since the refactor) |
+| `Mked.Application.Tests` | `OpenFileUseCase`, `SaveFileUseCase`, `StreamInputUseCase` — use cases that operate on strings / `OpenedFile` |
 
 ---
 
@@ -478,5 +506,5 @@ No new `MkedError` variants are introduced.
 |---|----------|--------|
 | 1 | **Undo granularity** — current `EditorState.UpdateCursor` pushes cursor state to the undo stack. The new cursor-movement methods do **not**. Should `UpdateCursor` be deprecated for editor use, or left as-is for existing callers? | Resolved: leave `UpdateCursor` unchanged for backward compatibility; the new movement methods skip the undo stack. Existing tests remain green. |
 | 2 | **Word count** — whitespace-split from raw buffer string (v1), or AST-derived (excludes frontmatter/code)? | Resolved: whitespace-split in v1 for simplicity; noted in `EditorStatusLine` docs as a known approximation. |
-| 3 | **`LiveDisplay` cursor flicker** — `LiveDisplay` re-renders the full widget per frame. For fast typists this may flicker. Is a frame-rate cap (e.g., 60 Hz) needed in the poll loop? | TBD — evaluate during Task 6 implementation; add `await Task.Delay(16, ct)` cap if flicker is observed. |
-| 4 | **Path prompt for new files on save** — `AnsiConsole.Ask<string>` inside a `LiveDisplay` may not behave correctly. Use a full-screen prompt or pause the live display before prompting? | TBD — resolve in Task 6; if necessary, cancel `LiveDisplay`, prompt, then restart. |
+| 3 | **`LiveDisplay` cursor flicker** — `LiveDisplay` re-renders the full widget per frame. For fast typists this may flicker. Is a frame-rate cap (e.g., 60 Hz) needed in the poll loop? | Resolved: `await Task.Delay(16, ct)` is added after each `ReadKey` in the inner loop, capping redraws to ~60 fps. If synchronized-output artifacts appear on a specific terminal, wrap the `UpdateTarget` call in `\x1B[?2026h` / `\x1B[?2026l` markers at the host boundary. |
+| 4 | **Path prompt for new files on save** — `AnsiConsole.Ask<string>` inside a `LiveDisplay` may not behave correctly. Use a full-screen prompt or pause the live display before prompting? | Resolved: host-level keys (Save/New/Open/Quit) cancel the inner `CancellationTokenSource`, which causes `StartAsync` to return. All `AnsiConsole.Ask` / `SelectionPrompt` calls run **after** `StartAsync` returns, with the live display fully stopped. The outer loop then re-enters `StartAsync` if no quit was requested. |
