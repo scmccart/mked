@@ -36,24 +36,36 @@ Define a family of algorithms (rendering strategies) and make them interchangeab
 
 ### Application in mked
 
-`IMarkdownRenderer` is the strategy interface:
+`IMarkdownRenderer<TOutput>` is the strategy interface (defined in `Mked.Application`):
 
 ```csharp
-public interface IMarkdownRenderer
+public interface IMarkdownRenderer<TOutput>
 {
-    IRenderable Render(MarkdownDocument document, RenderContext context);
+    TOutput Render(MarkdownDocument document, RenderContext context);
 }
 ```
 
-Concrete strategies:
+The generic `TOutput` parameter keeps `Mked.Application` free of Spectre.Console references. Callers in the Presentation layer close the type parameter over a concrete output type at the composition root.
 
-| Class | Used when |
-|---|---|
-| `SpectreMarkdownRenderer` | Normal viewer/editor output |
-| `PlainTextRenderer` | Piped/non-interactive output (`--plain` flag) |
-| `AnsiMarkdownRenderer` | Raw ANSI fallback for terminals with limited VT support |
+Concrete strategy:
 
-The `ViewCommand` receives an `IMarkdownRenderer` via constructor injection and never knows which concrete strategy it is using.
+| Class | `TOutput` | Used when |
+|---|---|---|
+| `SpectreMarkdownRenderer` | `IRenderable` | Stream mode (`--stream`) — renders incremental stdin input as a live `MarkdownViewer` |
+
+`SpectreMarkdownRenderer` is instantiated directly by `ViewCommand.RunStreamModeAsync` with a `RenderContext` capturing the current `--show-frontmatter` and `--plain` settings. For the non-streaming paths (`RunFileModeAsync`, `RunFollowModeAsync`) the command constructs a `MarkdownViewer` directly via `BuildViewer()`, bypassing the renderer abstraction.
+
+`SpectreMarkdownRenderer` also exposes a `Stream` method and an `Errors` channel reader:
+
+```csharp
+// Converts an async stream of Result<StreamedDocument, MkedError> into MarkdownViewer instances.
+// Out-of-band errors are forwarded to Errors for display without interrupting the stream.
+public async IAsyncEnumerable<MarkdownViewer> Stream(
+    IAsyncEnumerable<Result<StreamedDocument, MkedError>> source,
+    CancellationToken cancellationToken = default);
+
+public ChannelReader<MkedError> Errors { get; }
+```
 
 ---
 
