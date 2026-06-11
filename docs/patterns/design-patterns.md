@@ -16,12 +16,14 @@ The `EditorState` is the subject. Observers implement `IEditorObserver`:
 ```csharp
 public interface IEditorObserver
 {
-    void OnBufferChanged(BufferChangedEvent e);
-    void OnCursorMoved(CursorMovedEvent e);
+    void OnBufferChanged(string newBuffer);
+    void OnCursorMoved(CursorPosition position);
 }
 ```
 
 The live preview widget subscribes to `OnBufferChanged` and re-renders the `MarkdownDocument` via Markdig. The status line subscribes to `OnCursorMoved` to update the line/column display.
+
+`EditorState` selectively fires each callback: buffer mutations only call `OnBufferChanged`; cursor-only moves only call `OnCursorMoved`. This prevents spurious re-parses on cursor navigation.
 
 This decouples the editing logic from the rendering logic — `EditorState` never imports Spectre.Console.
 
@@ -77,20 +79,20 @@ Layers (applied in order):
 2. `EmphasisHighlightLayer` — italics / bold markers.
 3. `LinkHighlightLayer` — `[text]` and `(url)` components.
 4. `FrontMatterDimLayer` — dims the YAML frontmatter block.
+5. `CodeFenceLayer` — marks fenced code block content as verbatim (no inner colouring).
 
 Each layer only handles its own token type. Composing them is trivial:
 
 ```csharp
-var layers = new IHighlightLayer[]
-{
+IHighlightLayer[] layers =
+[
     new HeadingHighlightLayer(),
     new EmphasisHighlightLayer(),
     new LinkHighlightLayer(),
-    new FrontMatterDimLayer()
-};
+    new FrontMatterDimLayer(),
+    new CodeFenceLayer(),
+];
 ```
-
-Code fences (`FencedCodeBlock`) are explicitly excluded from all layers — their content is rendered verbatim.
 
 ---
 
@@ -101,35 +103,43 @@ Encapsulate a request as an object, enabling parameterisation, queuing, logging,
 
 ### Application in mked
 
-Every user action that mutates the editor buffer is an `IEditorCommand`:
+Every mutation that `EditorState` applies is recorded as a private `IEditorCommand` object. The interface has three responsibilities:
 
 ```csharp
-public interface IEditorCommand
+// (private to EditorState)
+interface IEditorCommand
 {
-    void Execute(EditorBuffer buffer);
-    void Undo(EditorBuffer buffer);
+    void Apply(EditorState state);
+
+    // Captures the current state as the inverse, ready to push onto the opposite stack.
+    IEditorCommand CaptureInverse(EditorState state);
+
+    // Fires only the observer callbacks relevant to this command type.
+    void Notify(EditorState state);
 }
 ```
 
-Concrete commands:
+There are two concrete command types:
 
-| Class | Triggered by |
-|---|---|
-| `InsertTextCommand` | Normal key input |
-| `DeleteBackwardCommand` | Backspace |
-| `DeleteForwardCommand` | Delete |
-| `PasteCommand` | Ctrl+V / Cmd+V |
-| `CutCommand` | Ctrl+X / Cmd+X |
+| Class | Triggered by | Fires |
+|---|---|---|
+| `BufferCommand` | `Insert`, `Delete`, `UpdateBuffer` | `IEditorObserver.OnBufferChanged` |
+| `CursorCommand` | `UpdateCursor` | `IEditorObserver.OnCursorMoved` |
 
-The `CommandHistory` maintains an undo stack (`Stack<IEditorCommand>`) and a redo stack. Undo pops from the undo stack and calls `Undo(buffer)`, then pushes onto the redo stack.
+Both types capture the *before* state at construction time. `CaptureInverse()` creates the mirror command (a `BufferCommand` capturing the current buffer becomes another `BufferCommand` capturing the post-apply buffer). This round-trip design keeps `BufferCommand`↔`BufferCommand` and `CursorCommand`↔`CursorCommand` symmetric, so corrupted redo for cursor-only operations cannot occur.
+
+The undo/redo stacks live directly in `EditorState`:
 
 ```csharp
-public sealed class CommandHistory
+public void Undo()
 {
-    public void Execute(IEditorCommand command, EditorBuffer buffer);
-    public void Undo(EditorBuffer buffer);
-    public void Redo(EditorBuffer buffer);
+    var cmd = _undoStack.Pop();
+    _redoStack.Push(cmd.CaptureInverse(this));
+    cmd.Apply(this);
+    cmd.Notify(this);
 }
 ```
 
-The toolbar's Save, New, and Open actions are *not* `IEditorCommand` instances — they are use cases in the Application layer. Only buffer-mutation operations participate in undo/redo.
+Cursor-navigation methods (`MoveCursorLeft`, `MoveCursorUp`, etc.) do **not** push to the undo stack. Only buffer mutations and explicit cursor repositioning via `UpdateCursor` are undoable.
+
+The Save, New, and Open actions are *not* commands — they are use cases in the Application layer and do not participate in undo/redo.
