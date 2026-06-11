@@ -1,6 +1,6 @@
-namespace Mked.Console;
+namespace Mked.Controls;
 
-/// <summary>Converts Domain <see cref="HighlightSpan"/> values to Controls <see cref="StyledSpan"/> values.</summary>
+/// <summary>Converts <see cref="HighlightSpan"/> values to <see cref="StyledSpan"/> values.</summary>
 public static class HighlightMapper
 {
     /// <summary>

@@ -1,4 +1,4 @@
-namespace Mked.Domain;
+namespace Mked.Controls;
 
 /// <summary>
 /// A single syntax-highlighting pass over a parsed Markdown document.

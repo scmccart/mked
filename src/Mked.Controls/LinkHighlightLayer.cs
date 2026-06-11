@@ -1,7 +1,6 @@
-using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 
-namespace Mked.Domain;
+namespace Mked.Controls;
 
 /// <summary>Annotates link text and URL spans.</summary>
 public sealed class LinkHighlightLayer : IHighlightLayer
@@ -9,7 +8,7 @@ public sealed class LinkHighlightLayer : IHighlightLayer
     /// <inheritdoc/>
     public IEnumerable<HighlightSpan> Annotate(string source, MarkdownDocument document)
     {
-        foreach (Block block in document.Blocks)
+        foreach (Block block in document)
         {
             foreach (HighlightSpan span in WalkBlock(source, block))
                 yield return span;

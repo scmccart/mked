@@ -1,4 +1,4 @@
-namespace Mked.Domain;
+namespace Mked.Controls;
 
 /// <summary>Stateless cursor movement operations over a newline-delimited text buffer.</summary>
 public static class CursorNavigation

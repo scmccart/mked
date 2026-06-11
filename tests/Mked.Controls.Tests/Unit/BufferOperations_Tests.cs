@@ -1,4 +1,4 @@
-namespace Mked.Domain.Tests;
+namespace Mked.Controls.Tests;
 
 public class BufferOperations_Tests
 {

@@ -1,4 +1,4 @@
-namespace Mked.Domain;
+namespace Mked.Controls;
 
 /// <summary>
 /// Mutable entity representing an active editing session. Stores the current buffer,
