@@ -347,11 +347,11 @@ public sealed class MarkdownEditor : IRenderable, IEditorObserver
     public bool CanRedo { get; }
 
     // Document lifecycle
-    public void LoadDocument(string buffer);   // reset buffer + MarkClean + reset scroll
+    public void LoadDocument(string buffer);   // reset buffer, undo/redo, cursor (1,1), clean baseline, scroll
     public void MarkClean();                   // call after a successful Save
 
     // Layout integration
-    public bool HasFocus { get; set; }          // gates the block cursor (split-view)
+    public bool HasFocus { get; set; }          // gates the block cursor; Ctrl+Tab flips focus in split-view
     public int? ViewportHeight { get; set; }    // set by host before each UpdateTarget call
     public event Action<string>? BufferChanged; // drives the preview pane
     public IRenderable StatusLine();            // bundled EditorStatusLine snapshot

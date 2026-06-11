@@ -80,13 +80,13 @@ public sealed class MarkdownEditor : IRenderable, IEditorObserver
     public event Action<string>? BufferChanged;
 
     /// <summary>
-    /// Replaces the buffer with <paramref name="buffer"/> and resets the dirty flag and scroll
-    /// position. Call when opening or creating a document.
+    /// Replaces the buffer with <paramref name="buffer"/> and resets the undo/redo history,
+    /// cursor position (to (1,1)), dirty flag, and scroll position. Call when opening or
+    /// creating a document.
     /// </summary>
     public void LoadDocument(string buffer)
     {
-        _state.UpdateBuffer(buffer);
-        _state.MarkClean();
+        _state.Reset(buffer);
         _topLineIndex = 0;
     }
 
@@ -195,6 +195,13 @@ public sealed class MarkdownEditor : IRenderable, IEditorObserver
             // ── Enter (newline) ────────────────────────────────────────────────
             case { Key: ConsoleKey.Enter }:
                 _state.Insert(_state.Cursor, "\n");
+                _state.MoveCursorRight();
+                return true;
+
+            // ── Tab — two-space indent ─────────────────────────────────────────
+            case { Key: ConsoleKey.Tab, Modifiers: 0 }:
+                _state.Insert(_state.Cursor, "  ");
+                _state.MoveCursorRight();
                 _state.MoveCursorRight();
                 return true;
 

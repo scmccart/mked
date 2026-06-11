@@ -14,6 +14,7 @@ public sealed class EditCommand : AsyncCommand<EditSettings>
         public bool SplitEnabled;
         public bool Cancelled;
         public HostAction PendingAction;
+        public int PreviewTopLine;
     }
 
     /// <inheritdoc/>
@@ -47,10 +48,19 @@ public sealed class EditCommand : AsyncCommand<EditSettings>
             int h = AnsiConsole.Profile.Height;
             editor.ViewportHeight = h - 1;
 
-            await AnsiConsole.Live(BuildLayout(editor, previewSource, session)).StartAsync(async liveCtx =>
+            // Build the initial preview instance; rebuilt in the dirty path when source or
+            // scroll position changes.
+            var preview = new MarkdownViewer(previewSource)
+            {
+                ShowFrontmatter = false,
+                ViewportHeight = editor.ViewportHeight,
+                TopLineIndex = session.PreviewTopLine,
+            };
+
+            await AnsiConsole.Live(BuildLayout(editor, preview, session)).StartAsync(async liveCtx =>
             {
                 using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                liveCtx.UpdateTarget(BuildLayout(editor, previewSource, session));
+                liveCtx.UpdateTarget(BuildLayout(editor, preview, session));
 
                 int lastW = AnsiConsole.Profile.Width;
                 int lastH = h;
@@ -65,14 +75,7 @@ public sealed class EditCommand : AsyncCommand<EditSettings>
                         {
                             var key = System.Console.ReadKey(intercept: true);
 
-                            // Editor owns editing / navigation / undo-redo.
-                            if (editor.HandleKey(key))
-                            {
-                                dirty = true;
-                                continue;
-                            }
-
-                            // Host-level keys — exit the live loop to handle them.
+                            // ── Host-level keys — always handled regardless of focus ──────────
                             switch (key)
                             {
                                 case { Key: ConsoleKey.S, Modifiers: ConsoleModifiers.Control }:
@@ -97,9 +100,67 @@ public sealed class EditCommand : AsyncCommand<EditSettings>
 
                                 case { Key: ConsoleKey.P, Modifiers: ConsoleModifiers.Control }:
                                     session.SplitEnabled = !session.SplitEnabled;
+                                    // When closing the split, always return focus to the editor.
+                                    if (!session.SplitEnabled)
+                                        editor.HasFocus = true;
                                     dirty = true;
-                                    break;
+                                    continue;
                             }
+
+                            // ── Ctrl+Tab — flip focus between editor and preview (split only) ─
+                            if (key is { Key: ConsoleKey.Tab, Modifiers: ConsoleModifiers.Control }
+                                && session.SplitEnabled)
+                            {
+                                editor.HasFocus = !editor.HasFocus;
+                                dirty = true;
+                                continue;
+                            }
+
+                            // ── Preview focused — route scroll keys to the preview pane ───────
+                            if (session.SplitEnabled && !editor.HasFocus)
+                            {
+                                int viewportH = editor.ViewportHeight ?? h;
+                                int maxLine = Math.Max(0, preview.ScrollInfo.TotalLineCount - viewportH);
+
+                                switch (key.Key)
+                                {
+                                    case ConsoleKey.UpArrow:
+                                        session.PreviewTopLine = Math.Max(session.PreviewTopLine - 1, 0);
+                                        dirty = true;
+                                        break;
+
+                                    case ConsoleKey.DownArrow:
+                                        session.PreviewTopLine = Math.Min(session.PreviewTopLine + 1, maxLine);
+                                        dirty = true;
+                                        break;
+
+                                    case ConsoleKey.PageUp:
+                                        session.PreviewTopLine = Math.Max(session.PreviewTopLine - Math.Max(1, viewportH / 2), 0);
+                                        dirty = true;
+                                        break;
+
+                                    case ConsoleKey.PageDown:
+                                        session.PreviewTopLine = Math.Min(session.PreviewTopLine + Math.Max(1, viewportH / 2), maxLine);
+                                        dirty = true;
+                                        break;
+
+                                    case ConsoleKey.Home:
+                                        session.PreviewTopLine = 0;
+                                        dirty = true;
+                                        break;
+
+                                    case ConsoleKey.End:
+                                        session.PreviewTopLine = maxLine;
+                                        dirty = true;
+                                        break;
+                                }
+
+                                continue;
+                            }
+
+                            // ── Editor focused — delegate editing / navigation / undo-redo ────
+                            if (editor.HandleKey(key))
+                                dirty = true;
                         }
 
                         int newW = AnsiConsole.Profile.Width;
@@ -114,7 +175,15 @@ public sealed class EditCommand : AsyncCommand<EditSettings>
                         }
 
                         if (dirty)
-                            liveCtx.UpdateTarget(BuildLayout(editor, previewSource, session));
+                        {
+                            preview = new MarkdownViewer(previewSource)
+                            {
+                                ShowFrontmatter = false,
+                                ViewportHeight = editor.ViewportHeight,
+                                TopLineIndex = session.PreviewTopLine,
+                            };
+                            liveCtx.UpdateTarget(BuildLayout(editor, preview, session));
+                        }
 
                         await Task.Delay(16, cts.Token);
                     }
@@ -235,7 +304,7 @@ public sealed class EditCommand : AsyncCommand<EditSettings>
 
     // ─── Layout ───────────────────────────────────────────────────────────────
 
-    private static Layout BuildLayout(MarkdownEditor editor, string previewSource, EditSession session)
+    private static Layout BuildLayout(MarkdownEditor editor, MarkdownViewer preview, EditSession session)
     {
         var statusLine = editor.StatusLine();
 
@@ -250,12 +319,6 @@ public sealed class EditCommand : AsyncCommand<EditSettings>
             layout["Status"].Size(1);
             return layout;
         }
-
-        var preview = new MarkdownViewer(previewSource)
-        {
-            ShowFrontmatter = false,
-            ViewportHeight = editor.ViewportHeight,
-        };
 
         var splitLayout = new Layout("Root")
             .SplitRows(

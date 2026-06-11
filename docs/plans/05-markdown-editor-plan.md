@@ -82,9 +82,12 @@ Depends on: Task 2, Task 3, Task 4
 
 `BuildLayout` returns a Spectre `Layout`. In split mode it nests `Editor` and `Preview` columns
 inside a `Main` row, with a 1-row `Status` beneath. `editor.BufferChanged += md => previewSource
-= md` wires the preview. `editor.HasFocus` gates the block cursor in the focused pane; `Tab`
-flips focus. `Ctrl+P` toggles `session.SplitEnabled` without restarting the outer loop. Resize is
-handled by updating `editor.ViewportHeight = AnsiConsole.Profile.Height - 1` each outer
-iteration. `editor.StatusLine()` is inserted into the Status layout cell.
+= md` wires the preview. `editor.HasFocus` gates the block cursor in the focused pane;
+`Ctrl+Tab` flips focus between editor and preview (bare `Tab` inserts a two-space indent). When
+the preview is focused, `↑/↓/PageUp/PageDown/Home/End` scroll it and other edit keys are not
+forwarded. `Ctrl+P` toggles `session.SplitEnabled` without restarting the outer loop; toggling
+the split off always restores `editor.HasFocus = true`. Resize is handled by updating
+`editor.ViewportHeight = AnsiConsole.Profile.Height - 1` each outer iteration.
+`editor.StatusLine()` is inserted into the Status layout cell.
 
 Depends on: Task 5
