@@ -1,6 +1,4 @@
-using Moq;
-
-namespace Mked.Domain.Tests;
+namespace Mked.Controls.Tests;
 
 public class EditorState_CursorMovement_Tests
 {

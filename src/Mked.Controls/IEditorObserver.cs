@@ -1,4 +1,4 @@
-namespace Mked.Domain;
+namespace Mked.Controls;
 
 /// <summary>Observer that receives notifications when editor state changes.</summary>
 public interface IEditorObserver

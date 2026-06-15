@@ -1,14 +1,24 @@
-namespace Mked.Domain.Tests;
+using Markdig;
+using Markdig.Syntax;
+
+namespace Mked.Controls.Tests;
 
 public class HighlightLayer_Tests
 {
+    private static readonly MarkdownPipeline Pipeline = new MarkdownPipelineBuilder()
+        .UseAdvancedExtensions()
+        .UseYamlFrontMatter()
+        .Build();
+
+    private static MarkdownDocument Parse(string source) => Markdown.Parse(source, Pipeline);
+
     // ── HeadingHighlightLayer ────────────────────────────────────────────────
 
     [Fact]
     public void HeadingLayer_H1_ProducesTwoSpans()
     {
         const string source = "# Hello";
-        var doc = MarkdownDocument.Parse(source);
+        var doc = Parse(source);
         var layer = new HeadingHighlightLayer();
 
         IEnumerable<HighlightSpan> spans = layer.Annotate(source, doc);
@@ -20,7 +30,7 @@ public class HighlightLayer_Tests
     public void HeadingLayer_H1_BothSpansHaveHeadingKind()
     {
         const string source = "# Hello";
-        var doc = MarkdownDocument.Parse(source);
+        var doc = Parse(source);
         var layer = new HeadingHighlightLayer();
 
         IEnumerable<HighlightSpan> spans = layer.Annotate(source, doc);
@@ -32,7 +42,7 @@ public class HighlightLayer_Tests
     public void HeadingLayer_H2_MarkerSpanStartsAtCol1()
     {
         const string source = "## World";
-        var doc = MarkdownDocument.Parse(source);
+        var doc = Parse(source);
         var layer = new HeadingHighlightLayer();
 
         HighlightSpan first = layer.Annotate(source, doc).First();
@@ -44,7 +54,7 @@ public class HighlightLayer_Tests
     public void HeadingLayer_NoHeading_ReturnsEmpty()
     {
         const string source = "Just a paragraph.";
-        var doc = MarkdownDocument.Parse(source);
+        var doc = Parse(source);
         var layer = new HeadingHighlightLayer();
 
         layer.Annotate(source, doc).Should().BeEmpty();
@@ -54,7 +64,7 @@ public class HighlightLayer_Tests
     public void HeadingLayer_MultipleHeadings_ProducesSpansForEach()
     {
         const string source = "# One\n\n## Two";
-        var doc = MarkdownDocument.Parse(source);
+        var doc = Parse(source);
         var layer = new HeadingHighlightLayer();
 
         IEnumerable<HighlightSpan> spans = layer.Annotate(source, doc);
@@ -69,7 +79,7 @@ public class HighlightLayer_Tests
     public void EmphasisLayer_Bold_ProducesBoldSpan()
     {
         const string source = "**bold**";
-        var doc = MarkdownDocument.Parse(source);
+        var doc = Parse(source);
         var layer = new EmphasisHighlightLayer();
 
         IEnumerable<HighlightSpan> spans = layer.Annotate(source, doc);
@@ -81,7 +91,7 @@ public class HighlightLayer_Tests
     public void EmphasisLayer_Italic_ProducesItalicSpan()
     {
         const string source = "*italic*";
-        var doc = MarkdownDocument.Parse(source);
+        var doc = Parse(source);
         var layer = new EmphasisHighlightLayer();
 
         IEnumerable<HighlightSpan> spans = layer.Annotate(source, doc);
@@ -94,7 +104,7 @@ public class HighlightLayer_Tests
     {
         // "**bold**" is 8 chars: offset 0..7 → positions (1,1)..(1,9)
         const string source = "**bold**";
-        var doc = MarkdownDocument.Parse(source);
+        var doc = Parse(source);
         var layer = new EmphasisHighlightLayer();
 
         HighlightSpan span = layer.Annotate(source, doc).Single(s => s.Kind == HighlightKind.Bold);
@@ -107,7 +117,7 @@ public class HighlightLayer_Tests
     public void EmphasisLayer_NoParagraph_ReturnsEmpty()
     {
         const string source = "# Heading only";
-        var doc = MarkdownDocument.Parse(source);
+        var doc = Parse(source);
         var layer = new EmphasisHighlightLayer();
 
         layer.Annotate(source, doc).Should().BeEmpty();
@@ -117,7 +127,7 @@ public class HighlightLayer_Tests
     public void EmphasisLayer_BoldAndItalic_ProducesBothKinds()
     {
         const string source = "**bold** and *italic*";
-        var doc = MarkdownDocument.Parse(source);
+        var doc = Parse(source);
         var layer = new EmphasisHighlightLayer();
 
         IEnumerable<HighlightSpan> spans = layer.Annotate(source, doc);
@@ -132,7 +142,7 @@ public class HighlightLayer_Tests
     public void LinkLayer_SimpleLink_ProducesLinkTextAndLinkUrl()
     {
         const string source = "[click here](https://example.com)";
-        var doc = MarkdownDocument.Parse(source);
+        var doc = Parse(source);
         var layer = new LinkHighlightLayer();
 
         IEnumerable<HighlightSpan> spans = layer.Annotate(source, doc);
@@ -145,7 +155,7 @@ public class HighlightLayer_Tests
     public void LinkLayer_NoLink_ReturnsEmpty()
     {
         const string source = "Just plain text.";
-        var doc = MarkdownDocument.Parse(source);
+        var doc = Parse(source);
         var layer = new LinkHighlightLayer();
 
         layer.Annotate(source, doc).Should().BeEmpty();
@@ -155,7 +165,7 @@ public class HighlightLayer_Tests
     public void LinkLayer_LinkTextSpan_StartsAtFirstChar()
     {
         const string source = "[hi](https://x.com)";
-        var doc = MarkdownDocument.Parse(source);
+        var doc = Parse(source);
         var layer = new LinkHighlightLayer();
 
         HighlightSpan textSpan = layer.Annotate(source, doc).First(s => s.Kind == HighlightKind.LinkText);
@@ -169,7 +179,7 @@ public class HighlightLayer_Tests
     public void FrontMatterLayer_WithFrontMatter_ProducesOneSpan()
     {
         const string source = "---\ntitle: Test\n---\n\n# Body";
-        var doc = MarkdownDocument.Parse(source);
+        var doc = Parse(source);
         var layer = new FrontMatterDimLayer();
 
         IEnumerable<HighlightSpan> spans = layer.Annotate(source, doc);
@@ -181,7 +191,7 @@ public class HighlightLayer_Tests
     public void FrontMatterLayer_WithFrontMatter_SpanStartsAtOrigin()
     {
         const string source = "---\ntitle: Test\n---\n\n# Body";
-        var doc = MarkdownDocument.Parse(source);
+        var doc = Parse(source);
         var layer = new FrontMatterDimLayer();
 
         HighlightSpan span = layer.Annotate(source, doc).Single();
@@ -193,7 +203,7 @@ public class HighlightLayer_Tests
     public void FrontMatterLayer_NoFrontMatter_ReturnsEmpty()
     {
         const string source = "# Just a heading";
-        var doc = MarkdownDocument.Parse(source);
+        var doc = Parse(source);
         var layer = new FrontMatterDimLayer();
 
         layer.Annotate(source, doc).Should().BeEmpty();
@@ -205,7 +215,7 @@ public class HighlightLayer_Tests
     public void CodeFenceLayer_FencedBlock_ProducesOneSpan()
     {
         const string source = "```csharp\nvar x = 1;\n```";
-        var doc = MarkdownDocument.Parse(source);
+        var doc = Parse(source);
         var layer = new CodeFenceLayer();
 
         IEnumerable<HighlightSpan> spans = layer.Annotate(source, doc);
@@ -217,7 +227,7 @@ public class HighlightLayer_Tests
     public void CodeFenceLayer_FencedBlock_SpanStartsAtOrigin()
     {
         const string source = "```\ncode\n```";
-        var doc = MarkdownDocument.Parse(source);
+        var doc = Parse(source);
         var layer = new CodeFenceLayer();
 
         HighlightSpan span = layer.Annotate(source, doc).Single();
@@ -229,7 +239,7 @@ public class HighlightLayer_Tests
     public void CodeFenceLayer_NoFence_ReturnsEmpty()
     {
         const string source = "Just text.";
-        var doc = MarkdownDocument.Parse(source);
+        var doc = Parse(source);
         var layer = new CodeFenceLayer();
 
         layer.Annotate(source, doc).Should().BeEmpty();
@@ -239,7 +249,7 @@ public class HighlightLayer_Tests
     public void CodeFenceLayer_MultipleFences_ProducesSpanPerFence()
     {
         const string source = "```\nfirst\n```\n\n```\nsecond\n```";
-        var doc = MarkdownDocument.Parse(source);
+        var doc = Parse(source);
         var layer = new CodeFenceLayer();
 
         IEnumerable<HighlightSpan> spans = layer.Annotate(source, doc);

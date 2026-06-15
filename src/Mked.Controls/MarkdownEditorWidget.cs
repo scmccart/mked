@@ -8,6 +8,7 @@ public sealed class MarkdownEditorWidget : IRenderable
     private readonly IReadOnlyList<StyledSpan> _highlights;
     private readonly int _topLineIndex;
     private readonly int? _viewportHeight;
+    private readonly bool _showCursor;
 
     /// <summary>
     /// Initialises a new <see cref="MarkdownEditorWidget"/>.
@@ -17,18 +18,21 @@ public sealed class MarkdownEditorWidget : IRenderable
     /// <param name="highlights">Syntax-highlight overlays expressed as character-offset spans.</param>
     /// <param name="topLineIndex">0-based index of the first line to display.</param>
     /// <param name="viewportHeight">Maximum number of lines to render; <see langword="null"/> renders all lines.</param>
+    /// <param name="showCursor">When <see langword="false"/> the block-cursor cell is not rendered with invert decoration.</param>
     public MarkdownEditorWidget(
         string buffer,
         (int Line, int Column) cursor,
         IReadOnlyList<StyledSpan> highlights,
         int topLineIndex = 0,
-        int? viewportHeight = null)
+        int? viewportHeight = null,
+        bool showCursor = true)
     {
         _buffer = buffer;
         _cursor = cursor;
         _highlights = highlights;
         _topLineIndex = topLineIndex;
         _viewportHeight = viewportHeight;
+        _showCursor = showCursor;
     }
 
     /// <inheritdoc/>
@@ -57,7 +61,7 @@ public sealed class MarkdownEditorWidget : IRenderable
 
             string line = lines[lineIdx];
             int lineStartOffset = ComputeLineStartOffset(lines, lineIdx);
-            bool isCursorLine = (lineIdx + 1) == _cursor.Line;
+            bool isCursorLine = _showCursor && (lineIdx + 1) == _cursor.Line;
             int cursorColIndex = _cursor.Column - 1;
 
             // Clip to maxWidth: an over-wide line would wrap in the terminal, making the

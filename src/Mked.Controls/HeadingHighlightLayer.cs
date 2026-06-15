@@ -1,6 +1,4 @@
-using Markdig.Syntax;
-
-namespace Mked.Domain;
+namespace Mked.Controls;
 
 /// <summary>Annotates ATX heading markers and heading text.</summary>
 public sealed class HeadingHighlightLayer : IHighlightLayer
@@ -8,7 +6,7 @@ public sealed class HeadingHighlightLayer : IHighlightLayer
     /// <inheritdoc/>
     public IEnumerable<HighlightSpan> Annotate(string source, MarkdownDocument document)
     {
-        foreach (Block block in document.Blocks)
+        foreach (Block block in document)
         {
             if (block is not HeadingBlock heading)
                 continue;

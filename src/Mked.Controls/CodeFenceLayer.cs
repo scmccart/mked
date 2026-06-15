@@ -1,6 +1,4 @@
-using Markdig.Syntax;
-
-namespace Mked.Domain;
+namespace Mked.Controls;
 
 /// <summary>Annotates fenced code blocks.</summary>
 public sealed class CodeFenceLayer : IHighlightLayer
@@ -8,7 +6,7 @@ public sealed class CodeFenceLayer : IHighlightLayer
     /// <inheritdoc/>
     public IEnumerable<HighlightSpan> Annotate(string source, MarkdownDocument document)
     {
-        foreach (Block block in document.Blocks)
+        foreach (Block block in document)
         {
             if (block is FencedCodeBlock fenced)
             {

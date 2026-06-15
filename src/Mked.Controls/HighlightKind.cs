@@ -1,4 +1,4 @@
-namespace Mked.Domain;
+namespace Mked.Controls;
 
 /// <summary>Identifies the syntactic role of a highlighted region in a Markdown document.</summary>
 public enum HighlightKind

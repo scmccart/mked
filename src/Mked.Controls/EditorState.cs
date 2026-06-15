@@ -1,4 +1,4 @@
-namespace Mked.Domain;
+namespace Mked.Controls;
 
 /// <summary>
 /// Mutable entity representing an active editing session. Stores the current buffer,
@@ -80,6 +80,29 @@ public sealed class EditorState
     {
         _cleanBuffer = Buffer;
         _isDirty = false;
+    }
+
+    /// <summary>
+    /// Replaces the buffer with <paramref name="newBuffer"/> as a fresh baseline, mirroring the
+    /// effect of constructing a new <see cref="EditorState"/>: the undo and redo stacks are
+    /// cleared, the cursor is reset to (1, 1), and the dirty flag is set to
+    /// <see langword="false"/>. Notifies all observers of the buffer and cursor change.
+    /// Call when opening or creating a document.
+    /// </summary>
+    public void Reset(string newBuffer)
+    {
+        ArgumentNullException.ThrowIfNull(newBuffer);
+        _undoStack.Clear();
+        _redoStack.Clear();
+        _cleanBuffer = newBuffer;
+        Buffer = newBuffer;
+        Cursor = new CursorPosition(1, 1);
+        _isDirty = false;
+        foreach (var observer in _observers)
+        {
+            observer.OnBufferChanged(Buffer);
+            observer.OnCursorMoved(Cursor);
+        }
     }
 
     /// <summary>Registers <paramref name="observer"/> to receive future change notifications.</summary>
