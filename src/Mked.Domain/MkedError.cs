@@ -7,7 +7,7 @@ namespace Mked.Domain;
 public abstract record MkedError
 {
     /// <summary>A file could not be read or written.</summary>
-    public sealed record IoError(string Path, string Reason) : MkedError;
+    public sealed record IoError(string Path, string Reason, IoKind Kind = IoKind.ReadNotFound) : MkedError;
 
     /// <summary>A Markdown source string failed strict-mode parsing.</summary>
     public sealed record ParseError(int Line, int Column, string Message) : MkedError;

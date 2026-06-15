@@ -22,7 +22,7 @@ public sealed class ViewSettings : CommandSettings
     [CommandOption("--show-frontmatter")]
     public bool ShowFrontmatter { get; init; }
 
-    /// <summary>Render link text only, omitting URLs.</summary>
+    /// <summary>Write plain text to stdout with no pager or ANSI codes. Auto-enabled when stdout is redirected.</summary>
     [CommandOption("-p|--plain")]
-    public bool PlainLinks { get; init; }
+    public bool Plain { get; init; }
 }

@@ -1,31 +1,68 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace Mked.Console;
 
 /// <summary>
 /// The <c>mked view</c> command. Renders a Markdown file in an interactive scrollable pager.
 /// Supports plain file view, <c>--follow</c> (live file reload), and <c>--stream</c> (stdin).
 /// </summary>
-public sealed class ViewCommand : AsyncCommand<ViewSettings>
+[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+public sealed class ViewCommand(OpenFileUseCase openFile, StreamInputUseCase streamInput)
+    : AsyncCommand<ViewSettings>
 {
-    private readonly OpenFileUseCase _openFile = new(new FileSystemReader());
-    private readonly StreamInputUseCase _streamInput = new(new StdinInputReader());
+    private readonly OpenFileUseCase _openFile = openFile;
+    private readonly StreamInputUseCase _streamInput = streamInput;
 
     /// <inheritdoc/>
     protected override async Task<int> ExecuteAsync(CommandContext context, ViewSettings settings, CancellationToken cancellationToken)
     {
-        if (settings.Stream)
+        bool useStdin = settings.Stream || (settings.Path is null && System.Console.IsInputRedirected);
+
+        if (useStdin)
         {
+            if (RendererSelector.IsPlainMode(settings))
+                return await RunPlainStreamModeAsync(settings);
             return await RunStreamModeAsync(settings);
         }
 
         if (settings.Path is null)
         {
             AnsiConsole.MarkupLine("[red]Error:[/] A file path is required.");
-            return 1;
+            return ExitCode.Usage;
         }
 
-        return settings.Follow
-            ? await RunFollowModeAsync(settings)
-            : await RunFileModeAsync(settings);
+        if (settings.Follow)
+            return await RunFollowModeAsync(settings);
+
+        if (RendererSelector.IsPlainMode(settings))
+            return await RunPlainFileModeAsync(settings);
+
+        return await RunFileModeAsync(settings);
+    }
+
+    // ─── Plain text output (no pager) ────────────────────────────────────────
+
+    private async Task<int> RunPlainFileModeAsync(ViewSettings settings)
+    {
+        var result = await _openFile.ExecuteAsync(settings.Path!);
+        if (result is not Result<OpenedFile, MkedError>.Ok(var file))
+            return ErrorPresenter.Show(((Result<OpenedFile, MkedError>.Err)result).Error);
+
+        await PlainTextRenderer.RenderAsync(file.Source, settings.ShowFrontmatter, System.Console.Out);
+        return ExitCode.Success;
+    }
+
+    private async Task<int> RunPlainStreamModeAsync(ViewSettings settings)
+    {
+        var docStream = _streamInput.ExecuteAsync();
+        await foreach (var chunk in docStream)
+        {
+            if (chunk is Result<StreamedDocument, MkedError>.Ok(var doc))
+                await PlainTextRenderer.RenderAsync(doc.Source, settings.ShowFrontmatter, System.Console.Out);
+            else if (chunk is Result<StreamedDocument, MkedError>.Err(var err))
+                ErrorPresenter.Show(err);
+        }
+        return ExitCode.Success;
     }
 
     // ─── Plain file mode ──────────────────────────────────────────────────────
@@ -34,10 +71,7 @@ public sealed class ViewCommand : AsyncCommand<ViewSettings>
     {
         var result = await _openFile.ExecuteAsync(settings.Path!);
         if (result is not Result<OpenedFile, MkedError>.Ok(var file))
-        {
-            AnsiConsole.MarkupLine($"[red]Error:[/] {Markup.Escape(FormatError(((Result<OpenedFile, MkedError>.Err)result).Error))}");
-            return 1;
-        }
+            return ErrorPresenter.Show(((Result<OpenedFile, MkedError>.Err)result).Error);
 
         int h = AnsiConsole.Profile.Height;
         int currentLine = 0;
@@ -45,6 +79,7 @@ public sealed class ViewCommand : AsyncCommand<ViewSettings>
         var viewer = baseViewer with { TopLineIndex = 0, ViewportHeight = h };
 
         using var cts = new CancellationTokenSource();
+        using var lifecycle = new TerminalLifecycle(cts);
 
         await AnsiConsole.Live(viewer).StartAsync(async liveCtx =>
         {
@@ -157,10 +192,7 @@ public sealed class ViewCommand : AsyncCommand<ViewSettings>
     {
         var result = await _openFile.ExecuteAsync(settings.Path!);
         if (result is not Result<OpenedFile, MkedError>.Ok(var file))
-        {
-            AnsiConsole.MarkupLine($"[red]Error:[/] {Markup.Escape(FormatError(((Result<OpenedFile, MkedError>.Err)result).Error))}");
-            return 1;
-        }
+            return ErrorPresenter.Show(((Result<OpenedFile, MkedError>.Err)result).Error);
 
         int h = AnsiConsole.Profile.Height;
         int currentLine = 0;
@@ -168,6 +200,7 @@ public sealed class ViewCommand : AsyncCommand<ViewSettings>
         var viewer = baseViewer with { TopLineIndex = 0, ViewportHeight = h };
 
         using var cts = new CancellationTokenSource();
+        using var lifecycle = new TerminalLifecycle(cts);
         using var watcher = new FileWatcherAdapter(settings.Path!);
 
         // Feed file-change notifications into a channel so we can consume them in the poll loop
@@ -309,12 +342,13 @@ public sealed class ViewCommand : AsyncCommand<ViewSettings>
     {
         int h = AnsiConsole.Profile.Height;
         int currentLine = 0;
-        var renderCtx = new RenderContext(settings.ShowFrontmatter, settings.PlainLinks);
+        var renderCtx = new RenderContext(settings.ShowFrontmatter, PlainLinks: false);
         var renderer = new SpectreMarkdownRenderer(renderCtx);
         var initialViewer = new MarkdownViewer(string.Empty) { ViewportHeight = h };
         MarkdownViewer viewer = initialViewer;
 
         using var cts = new CancellationTokenSource();
+        using var lifecycle = new TerminalLifecycle(cts);
 
         var docStream = _streamInput.ExecuteAsync(cts.Token);
         var viewerStream = renderer.Stream(docStream, cts.Token);
@@ -443,9 +477,7 @@ public sealed class ViewCommand : AsyncCommand<ViewSettings>
 
                     // Show any stream errors as a status line
                     if (renderer.Errors.TryRead(out var err))
-                    {
-                        AnsiConsole.MarkupLine($"[dim red]{Markup.Escape(FormatError(err))}[/]");
-                    }
+                        ErrorPresenter.Show(err);
 
                     await Task.Delay(16, cts.Token);
                 }
@@ -464,14 +496,6 @@ public sealed class ViewCommand : AsyncCommand<ViewSettings>
         new(source)
         {
             ShowFrontmatter = settings.ShowFrontmatter,
-            PlainLinks = settings.PlainLinks,
         };
 
-    private static string FormatError(MkedError error) => error switch
-    {
-        MkedError.IoError e => $"{e.Path}: {e.Reason}",
-        MkedError.ParseError e => $"Parse error at {e.Line}:{e.Column}: {e.Message}",
-        MkedError.StreamError e => $"Stream error: {e.Reason}",
-        _ => error.ToString() ?? "Unknown error",
-    };
 }

@@ -27,15 +27,15 @@ public sealed class FileSystemReader : IFileReader
         }
         catch (FileNotFoundException)
         {
-            return Result.Err<string, MkedError>(new MkedError.IoError(path, "File not found"));
+            return Result.Err<string, MkedError>(new MkedError.IoError(path, "File not found", IoKind.ReadNotFound));
         }
         catch (UnauthorizedAccessException)
         {
-            return Result.Err<string, MkedError>(new MkedError.IoError(path, "Access denied"));
+            return Result.Err<string, MkedError>(new MkedError.IoError(path, "Access denied", IoKind.ReadAccessDenied));
         }
         catch (IOException ex)
         {
-            return Result.Err<string, MkedError>(new MkedError.IoError(path, ex.Message));
+            return Result.Err<string, MkedError>(new MkedError.IoError(path, ex.Message, IoKind.ReadNotFound));
         }
     }
 }
