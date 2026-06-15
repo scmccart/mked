@@ -30,13 +30,27 @@ public sealed class EditorStatusLine : IRenderable
     /// <inheritdoc/>
     public IEnumerable<Segment> Render(RenderOptions options, int maxWidth)
     {
-        yield return new Segment($"  Ln {_cursor.Line}, Col {_cursor.Column}   ", Style.Plain);
+        var bar = Style.Plain;
 
-        Style dotStyle = _isDirty
-            ? new Style(foreground: Color.Yellow)
-            : new Style(foreground: Color.Grey);
-        yield return new Segment("●", dotStyle);
+        var posText  = $"  Ln {_cursor.Line}, Col {_cursor.Column}   ";
+        var dotText  = "●";
+        var wordText = $"  {_wordCount} words  ";
 
-        yield return new Segment($"  {_wordCount} words  ", Style.Plain);
+        yield return new Segment(posText, bar);
+
+        // Only render the dirty marker when there are unsaved changes.
+        int used = posText.Length + wordText.Length;
+        if (_isDirty)
+        {
+            yield return new Segment(dotText, bar);
+            used += dotText.Length;
+        }
+
+        yield return new Segment(wordText, bar);
+
+        // Fill the rest of the row so the background spans the full width.
+        int pad = Math.Max(0, maxWidth - used);
+        if (pad > 0)
+            yield return new Segment(new string(' ', pad), bar);
     }
 }

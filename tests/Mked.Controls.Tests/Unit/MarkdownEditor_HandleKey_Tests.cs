@@ -99,7 +99,7 @@ public class MarkdownEditor_HandleKey_Tests
         editor.Buffer.Should().Be("  text");
     }
 
-    // ─── Ctrl+Tab — not consumed by the editor ────────────────────────────────
+    // ─── Ctrl+Tab / Shift+Tab — not consumed by the editor ───────────────────
 
     [Fact]
     public void HandleKey_CtrlTab_ReturnsFalse()
@@ -107,6 +107,18 @@ public class MarkdownEditor_HandleKey_Tests
         var editor = new MarkdownEditor("content");
 
         bool handled = editor.HandleKey(Key(ConsoleKey.Tab, '\t', ConsoleModifiers.Control));
+
+        handled.Should().BeFalse();
+    }
+
+    [Fact]
+    public void HandleKey_ShiftTab_ReturnsFalse()
+    {
+        // Shift+Tab is handled at the host level (pane focus switch); the editor
+        // must not consume it so the host loop sees it.
+        var editor = new MarkdownEditor("content");
+
+        bool handled = editor.HandleKey(Key(ConsoleKey.Tab, '\t', ConsoleModifiers.Shift));
 
         handled.Should().BeFalse();
     }

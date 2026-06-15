@@ -19,13 +19,13 @@
 | `Ctrl+N` | New empty document (prompts to save if dirty) |
 | `Ctrl+O` | Open a different file (prompts to save if dirty) |
 | `Tab` | Insert a two-space indent |
-| `Ctrl+Tab` | Switch focus to the preview pane (split mode) |
+| `Shift+Tab` | Switch focus to the preview pane (split mode) |
 | `Ctrl+P` | Toggle the live preview pane |
 | `Ctrl+Q` | Quit (prompts to save if there are unsaved changes) |
 
 ## Preview pane (split mode, preview focused)
 
-When `Ctrl+Tab` has moved focus to the preview pane in split view, these keys scroll it:
+When `Shift+Tab` has moved focus to the preview pane in split view, these keys scroll it:
 
 | Key | Action |
 |---|---|
@@ -35,7 +35,7 @@ When `Ctrl+Tab` has moved focus to the preview pane in split view, these keys sc
 | `PageDown` | Scroll down half a screen |
 | `Home` | Jump to top of preview |
 | `End` | Jump to bottom of preview |
-| `Ctrl+Tab` | Return focus to the editor |
+| `Shift+Tab` | Return focus to the editor |
 
 ## Viewer mode
 

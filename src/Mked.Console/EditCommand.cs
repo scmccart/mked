@@ -46,7 +46,7 @@ public sealed class EditCommand : AsyncCommand<EditSettings>
             session.PendingAction = HostAction.None;
 
             int h = AnsiConsole.Profile.Height;
-            editor.ViewportHeight = h - 1;
+            editor.ViewportHeight = ComputeViewportHeight(h, session.SplitEnabled);
 
             // Build the initial preview instance; rebuilt in the dirty path when source or
             // scroll position changes.
@@ -103,12 +103,13 @@ public sealed class EditCommand : AsyncCommand<EditSettings>
                                     // When closing the split, always return focus to the editor.
                                     if (!session.SplitEnabled)
                                         editor.HasFocus = true;
+                                    editor.ViewportHeight = ComputeViewportHeight(h, session.SplitEnabled);
                                     dirty = true;
                                     continue;
                             }
 
-                            // ── Ctrl+Tab — flip focus between editor and preview (split only) ─
-                            if (key is { Key: ConsoleKey.Tab, Modifiers: ConsoleModifiers.Control }
+                            // ── Shift+Tab — flip focus between editor and preview (split only) ─
+                            if (key is { Key: ConsoleKey.Tab, Modifiers: ConsoleModifiers.Shift }
                                 && session.SplitEnabled)
                             {
                                 editor.HasFocus = !editor.HasFocus;
@@ -167,7 +168,7 @@ public sealed class EditCommand : AsyncCommand<EditSettings>
                         int newH = AnsiConsole.Profile.Height;
                         if (newW != lastW || newH != lastH)
                         {
-                            editor.ViewportHeight = newH - 1;
+                            editor.ViewportHeight = ComputeViewportHeight(newH, session.SplitEnabled);
                             h = newH;
                             lastW = newW;
                             lastH = newH;
@@ -327,13 +328,21 @@ public sealed class EditCommand : AsyncCommand<EditSettings>
                     new Layout("Preview")),
                 new Layout("Status"));
 
-        splitLayout["Editor"].Update(editor);
-        splitLayout["Preview"].Update(preview);
+        splitLayout["Editor"].Update(new Panel(editor).Expand().Border(BoxBorder.Rounded));
+        splitLayout["Preview"].Update(new Panel(preview).Expand().Border(BoxBorder.Rounded));
         splitLayout["Status"].Update(statusLine);
         splitLayout["Status"].Size(1);
 
         return splitLayout;
     }
+
+    /// <summary>
+    /// Returns the editor/preview content height for the given terminal height and split state.
+    /// In split mode each pane is wrapped in a rounded <see cref="Panel"/> that consumes two rows
+    /// (top and bottom border), so the usable height is two less than in the non-split case.
+    /// </summary>
+    private static int ComputeViewportHeight(int terminalHeight, bool split) =>
+        split ? terminalHeight - 3 : terminalHeight - 1;
 
     private static string FormatError(MkedError error) => error switch
     {

@@ -18,25 +18,23 @@ public sealed class EditorStatusLine_Tests
     // ─── Dirty indicator ──────────────────────────────────────────────────────
 
     [Fact]
-    public void Dirty_True_BulletSegmentIsYellow()
+    public void Dirty_True_BulletSegmentPresent()
     {
         var statusLine = new EditorStatusLine(cursor: (1, 1), isDirty: true, wordCount: 0);
 
         var segs = GetSegments(statusLine);
 
-        segs.Should().Contain(s =>
-            s.Text.Contains('●') && s.Style.Foreground == Color.Yellow);
+        segs.Should().Contain(s => s.Text.Contains('●'));
     }
 
     [Fact]
-    public void Dirty_False_BulletSegmentIsGrey()
+    public void Dirty_False_NoBulletSegment()
     {
         var statusLine = new EditorStatusLine(cursor: (1, 1), isDirty: false, wordCount: 0);
 
         var segs = GetSegments(statusLine);
 
-        segs.Should().Contain(s =>
-            s.Text.Contains('●') && s.Style.Foreground == Color.Grey);
+        segs.Should().NotContain(s => s.Text.Contains('●'));
     }
 
     // ─── Position and word count ───────────────────────────────────────────────
