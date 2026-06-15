@@ -39,7 +39,8 @@ public sealed class EditCommand : AsyncCommand<EditSettings>
 
         // Track the latest buffer for the preview pane without re-parsing on every frame.
         string previewSource = editor.Buffer;
-        editor.BufferChanged += md => previewSource = md;
+        bool previewSourceChanged = false;
+        editor.BufferChanged += md => { previewSource = md; previewSourceChanged = true; };
 
         while (!session.Cancelled && !cancellationToken.IsCancellationRequested)
         {
@@ -48,14 +49,16 @@ public sealed class EditCommand : AsyncCommand<EditSettings>
             int h = AnsiConsole.Profile.Height;
             editor.ViewportHeight = ComputeViewportHeight(h, session.SplitEnabled);
 
-            // Build the initial preview instance; rebuilt in the dirty path when source or
-            // scroll position changes.
+            // Build the initial preview instance. In the dirty path below, `with`-copies are used
+            // for scroll/resize changes so the parsed AST and render cache are reused; a full
+            // reconstruction only happens when the source text actually changes.
             var preview = new MarkdownViewer(previewSource)
             {
                 ShowFrontmatter = false,
                 ViewportHeight = editor.ViewportHeight,
                 TopLineIndex = session.PreviewTopLine,
             };
+            previewSourceChanged = false;
 
             await AnsiConsole.Live(BuildLayout(editor, preview, session)).StartAsync(async liveCtx =>
             {
@@ -177,12 +180,21 @@ public sealed class EditCommand : AsyncCommand<EditSettings>
 
                         if (dirty)
                         {
-                            preview = new MarkdownViewer(previewSource)
-                            {
-                                ShowFrontmatter = false,
-                                ViewportHeight = editor.ViewportHeight,
-                                TopLineIndex = session.PreviewTopLine,
-                            };
+                            // Re-parse only when the buffer actually changed; for scroll /
+                            // resize ticks reuse the existing AST and render cache via with.
+                            preview = previewSourceChanged
+                                ? new MarkdownViewer(previewSource)
+                                {
+                                    ShowFrontmatter = false,
+                                    ViewportHeight = editor.ViewportHeight,
+                                    TopLineIndex = session.PreviewTopLine,
+                                }
+                                : preview with
+                                {
+                                    ViewportHeight = editor.ViewportHeight,
+                                    TopLineIndex = session.PreviewTopLine,
+                                };
+                            previewSourceChanged = false;
                             liveCtx.UpdateTarget(BuildLayout(editor, preview, session));
                         }
 
