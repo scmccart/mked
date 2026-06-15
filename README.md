@@ -92,6 +92,8 @@ Omit `path` to start with a blank document.
 | `Ctrl+S` | Save (prompts for a path when editing a new document) |
 | `Ctrl+O` | Open a different file |
 | `Ctrl+N` | New empty document |
+| `Tab` | Insert a two-space indent |
+| `Shift+Tab` | Toggle focus between editor and preview pane (split mode) |
 | `Ctrl+P` | Toggle the live preview pane |
 | `Ctrl+Q` | Quit (prompts to save if there are unsaved changes) |
 

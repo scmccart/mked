@@ -17,7 +17,7 @@ Clean Architecture (Robert C. Martin) organises code into concentric layers wher
 │  Infrastructure (Mked.Infrastructure)   │  ← File system, stdin/stdout,
 │  I/O adapters, OS integrations          │    file-watcher adapter
 ├─────────────────────────────────────────┤
-│  Domain (Mked.Domain)                   │  ← MarkdownDocument, EditorState,
+│  Domain (Mked.Domain)                   │  ← MarkdownDocument, ViewerState,
 │  Entities, value objects, interfaces    │    Result<T,E>, interfaces
 └─────────────────────────────────────────┘
 ```
@@ -28,12 +28,17 @@ Clean Architecture (Robert C. Martin) organises code into concentric layers wher
 
 The innermost layer. Contains:
 
-- **Entities** — `EditorState`, `ViewerState`, `MarkdownDocument` wrapper.
-- **Value objects** — `CursorPosition`, `TextRange`, `ViewportAnchor`.
+- **Entities** — `ViewerState`, `MarkdownDocument` wrapper.
+- **Value objects** — `ViewportAnchor`.
 - **Interfaces** — `IFileReader`, `IFileWriter`, `IInputReader` — defined here, implemented in Infrastructure.
 - **Result types** — `Result<T,E>` and `Maybe<T>` (see [`result-types.md`](result-types.md)).
 
 No dependencies on NuGet packages except the .NET BCL. AOT-safe by construction.
+
+> **Note:** Editor-related types (`EditorState`, `CursorPosition`, `TextRange`, `BufferOperations`,
+> `CursorNavigation`, `IEditorObserver`, and the highlight-pipeline interfaces) live in
+> `Mked.Controls`, not `Mked.Domain`. They were moved there in Epic 5 so `Mked.Controls` can be
+> published as a self-contained NuGet package without any Domain dependency.
 
 ### Application (`Mked.Application`)
 

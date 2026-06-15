@@ -1,12 +1,12 @@
 # Editor State & Highlight Pipeline
 
-This document covers the domain types that back the `mked edit` command: the mutable `EditorState`
+This document covers the controls types that back the `mked edit` command: the mutable `EditorState`
 entity, the pure functional helpers (`BufferOperations`, `CursorNavigation`), and the composable
-syntax-highlighting pipeline.
+syntax-highlighting pipeline. All of these types live in `Mked.Controls`.
 
 ## EditorState
 
-`EditorState` (in `Mked.Domain`) is the single mutable entity for an active editing session. It
+`EditorState` (in `Mked.Controls`) is the single mutable entity for an active editing session. It
 owns:
 
 - **Buffer** — the raw `string` content of the document.
@@ -33,7 +33,8 @@ owns:
 | `MoveCursorToLineStart/End()` | Line navigation (no undo entry). |
 | `Undo()` | Pop undo stack; push inverse onto redo stack; apply; notify. |
 | `Redo()` | Pop redo stack; push inverse onto undo stack; apply; notify. |
-| `MarkClean()` | Reset the dirty baseline to the current buffer (call after save / open / new). |
+| `Reset(newBuffer)` | Clear undo/redo stacks, reset cursor to (1,1) and dirty flag to `false`, establish `newBuffer` as the new clean baseline, notify all observers. Call when opening or creating a document. |
+| `MarkClean()` | Record the current buffer as the clean baseline, resetting `IsDirty` to `false`. Call after a successful save. |
 
 ### Dirty tracking
 
@@ -93,7 +94,7 @@ methods fire `OnCursorMoved` — preventing unnecessary Markdig re-parses on cur
 
 ## BufferOperations
 
-`BufferOperations` (in `Mked.Domain`) is a static class of pure functions. It treats the buffer
+`BufferOperations` (in `Mked.Controls`) is a static class of pure functions. It treats the buffer
 as a newline-delimited string and never modifies state.
 
 | Method | Signature | Description |
@@ -110,7 +111,7 @@ string index required by `string.Substring` / slice operations.
 
 ## CursorNavigation
 
-`CursorNavigation` (in `Mked.Domain`) is a static class of pure cursor-movement functions. Each
+`CursorNavigation` (in `Mked.Controls`) is a static class of pure cursor-movement functions. Each
 function takes `(string buffer, CursorPosition current)` and returns the new `CursorPosition`
 without mutating anything.
 
@@ -181,17 +182,18 @@ buffer changes (cursor-only redraws reuse the cached spans).
 
 ### Translating to Spectre.Console
 
-`IHighlightLayer` operates in Domain-layer types (`TextRange`, `HighlightKind`). Before passing
-spans to `MarkdownEditorWidget` in `Mked.Controls`, the `HighlightMapper` class (in `Mked.Console`)
-converts them to `StyledSpan` values (character offsets + Spectre.Console `Style`):
+All pipeline types (`TextRange`, `HighlightKind`, `HighlightSpan`, `StyledSpan`) and the
+`HighlightMapper` converter live in `Mked.Controls`. `HighlightMapper.Map` translates
+`HighlightSpan` values (line/column `TextRange` coordinates) into `StyledSpan` values
+(character offsets + Spectre.Console `Style`):
 
 ```
 IHighlightLayer.Annotate()
-    → IEnumerable<HighlightSpan>          (Domain types, TextRange coordinates)
+    → IEnumerable<HighlightSpan>          (TextRange coordinates)
     → HighlightMapper.Map(spans, buffer)
-    → IReadOnlyList<StyledSpan>           (Mked.Controls types, character offsets)
+    → IReadOnlyList<StyledSpan>           (character offsets + Style)
     → MarkdownEditorWidget(highlights)
 ```
 
-This translation layer keeps `Mked.Controls` free of any `Mked.Domain` dependency, allowing it
-to be published as a standalone NuGet package.
+`MarkdownEditor` runs this pipeline automatically on every buffer change and caches the result;
+hosts using `MarkdownEditorWidget` directly must call `HighlightMapper.Map` themselves.

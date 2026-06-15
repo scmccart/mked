@@ -4,10 +4,67 @@
 
 `Mked.Controls` extends Spectre.Console with terminal-native Markdown widgets:
 
+- `MarkdownEditor` — embeddable, interactive editor that owns `EditorState`, the highlight pipeline, undo/redo history, and viewport scroll; implements both `IRenderable` and `IEditorObserver`
 - `MarkdownViewer` — read-only, scrollable rendering of a Markdown string, implemented as an `IRenderable`
-- `MarkdownEditorWidget` — raw text buffer with a block cursor and syntax-highlight overlays, implemented as an `IRenderable`
+- `MarkdownEditorWidget` — low-level text-buffer renderer with a block cursor and syntax-highlight overlays, implemented as an `IRenderable`
 - `EditorStatusLine` — single-line status bar showing cursor position, dirty state, and word count, implemented as an `IRenderable`
 - `StyledSpan` — character-offset span with a Spectre.Console `Style`, used to pass highlight data into `MarkdownEditorWidget`
+- `HighlightMapper` — converts `HighlightSpan` values (line/column coordinates) to `StyledSpan` values (character offsets) for use with `MarkdownEditorWidget`
+
+## MarkdownEditor
+
+`MarkdownEditor` is the primary embeddable editor control. It owns the full editing stack — `EditorState`, syntax-highlighting pipeline, undo/redo history, and viewport scroll — and exposes a simple host interface.
+
+```csharp
+using Mked.Controls;
+
+var editor = new MarkdownEditor();
+editor.ViewportHeight = AnsiConsole.Profile.Height - 1; // minus status line
+editor.BufferChanged += newBuffer => previewPane.Refresh(newBuffer);
+
+// In your AnsiConsole.Live render loop:
+bool needsRedraw = editor.HandleKey(Console.ReadKey(intercept: true));
+if (needsRedraw)
+    liveCtx.UpdateTarget(new Rows(editor, editor.StatusLine()));
+```
+
+Unhandled keys (Save, Quit, Open, New, TogglePreview) return `false` from `HandleKey`, allowing the host to respond to them.
+
+### Constructor
+
+```csharp
+public MarkdownEditor(string initialBuffer = "");
+```
+
+### Properties
+
+| Property | Type | Default | Description |
+|---|---|---|---|
+| `Buffer` | `string` | `""` | Current text content (read-only). |
+| `Cursor` | `(int Line, int Column)` | `(1, 1)` | 1-based cursor position (read-only). |
+| `IsDirty` | `bool` | `false` | `true` when the buffer has unsaved changes. |
+| `WordCount` | `int` | `0` | Whitespace-delimited word count (read-only). |
+| `CanUndo` | `bool` | `false` | `true` when the undo stack is non-empty (read-only). |
+| `CanRedo` | `bool` | `false` | `true` when the redo stack is non-empty (read-only). |
+| `HasFocus` | `bool` | `true` | Controls whether the block cursor is rendered. Set to `false` when the editor pane does not have focus in a split-view layout. |
+| `ViewportHeight` | `int?` | `null` | Maximum number of terminal rows to render. `null` renders all lines. Update on terminal resize. |
+
+### Events
+
+| Event | Signature | Description |
+|---|---|---|
+| `BufferChanged` | `Action<string>?` | Raised after each buffer mutation with the new buffer content. Subscribe to drive a live preview pane. |
+
+### Methods
+
+| Method | Returns | Description |
+|---|---|---|
+| `LoadDocument(string buffer)` | `void` | Replace the buffer with `buffer`; reset the undo/redo stacks, cursor to (1, 1), dirty flag, and scroll position. Call when opening or creating a document. |
+| `MarkClean()` | `void` | Record the current buffer as the clean baseline. Call after a successful save. |
+| `StatusLine()` | `IRenderable` | Return a snapshot of the status bar for the current editor frame. |
+| `HandleKey(ConsoleKeyInfo key)` | `bool` | Process a keystroke. Returns `true` if the display needs to be redrawn (buffer, cursor, or scroll changed). Returns `false` for keys the host must handle: Save (`Ctrl+S`), Quit (`Ctrl+Q`), Open (`Ctrl+O`), New (`Ctrl+N`), TogglePreview (`Ctrl+P`), and focus-toggle (`Shift+Tab`). |
+
+---
 
 ## MarkdownViewer
 
@@ -155,7 +212,7 @@ public EditorStatusLine(
 | Parameter | Type | Description |
 |---|---|---|
 | `cursor` | `(int Line, int Column)` | 1-based cursor position displayed as `Ln N, Col N`. |
-| `isDirty` | `bool` | When `true`, the dirty dot (`●`) is rendered in yellow; when `false`, it is grey. |
+| `isDirty` | `bool` | When `true`, the dirty dot (`●`) is shown. When `false`, the dot is hidden entirely. |
 | `wordCount` | `int` | Word count displayed at the right of the status line. |
 
 ---
@@ -174,4 +231,21 @@ public readonly record struct StyledSpan(int StartOffset, int Length, Style Spec
 | `Length` | `int` | Number of characters covered by this span. |
 | `SpectreStyle` | `Style` | Spectre.Console `Style` applied to all characters in the span. |
 
-`StyledSpan` uses character offsets rather than `(line, column)` coordinates so it integrates directly with Spectre.Console's `Segment`-based rendering pipeline. Use `HighlightMapper.Map()` (in `Mked.Console`) to convert Domain `HighlightSpan` values (which carry `TextRange` coordinates) into `StyledSpan` values for use with this widget.
+`StyledSpan` uses character offsets rather than `(line, column)` coordinates so it integrates directly with Spectre.Console's `Segment`-based rendering pipeline. Use `HighlightMapper.Map()` to convert `HighlightSpan` values (which carry `TextRange` coordinates) into `StyledSpan` values for use with this widget.
+
+---
+
+## HighlightMapper
+
+Converts `HighlightSpan` values — which use line/column `TextRange` coordinates — to `StyledSpan` values that `MarkdownEditorWidget` can consume.
+
+```csharp
+public static class HighlightMapper
+{
+    public static IReadOnlyList<StyledSpan> Map(
+        IEnumerable<HighlightSpan> spans,
+        string buffer);
+}
+```
+
+`MarkdownEditor` calls `HighlightMapper.Map` internally on every buffer change and caches the result. Hosts using `MarkdownEditorWidget` directly (without `MarkdownEditor`) must call it themselves to translate `IHighlightLayer` output into the widget's `highlights` parameter.
