@@ -1,29 +1,47 @@
 {
   "pages": [
-    {"title": "Home", "slug": "Home", "level": 1, "children": []},
+    {"title": "Home", "slug": "Home", "level": 1,
+      "sidebarSections": [
+        {"title": "Key Features", "anchor": "Key-Features"},
+        {"title": "Distribution", "anchor": "Distribution"}
+      ],
+      "children": []},
     {"title": "Getting Started", "slug": "Getting-Started", "level": 1, "children": []},
+    {"title": "CLI Reference", "slug": "CLI-Reference", "level": 1,
+      "sidebarSections": [
+        {"title": "view Command", "anchor": "view-Command"},
+        {"title": "edit Command", "anchor": "edit-Command"}
+      ],
+      "children": [
+        {"title": "Keyboard Shortcuts", "slug": "Keyboard-Shortcuts", "level": 2, "children": []}
+      ]},
     {"title": "Architecture", "slug": "Architecture", "level": 1, "children": [
-      {"title": "Domain Layer", "slug": "Domain-Layer", "level": 2},
-      {"title": "Application Layer", "slug": "Application-Layer", "level": 2},
-      {"title": "Infrastructure Layer", "slug": "Infrastructure-Layer", "level": 2}
+      {"title": "Domain Layer", "slug": "Domain-Layer", "level": 2,
+        "sidebarSections": [
+          {"title": "EditorState", "anchor": "EditorState"},
+          {"title": "Result and Maybe Types", "anchor": "Result-and-Maybe-Types"},
+          {"title": "Highlight Pipeline", "anchor": "Highlight-Pipeline"}
+        ],
+        "children": []},
+      {"title": "Application Layer", "slug": "Application-Layer", "level": 2, "children": []},
+      {"title": "Infrastructure Layer", "slug": "Infrastructure-Layer", "level": 2, "children": []}
     ]},
-    {"title": "Core Concepts", "slug": "Core-Concepts", "level": 1, "children": [
-      {"title": "Result Types", "slug": "Result-Types", "level": 2},
-      {"title": "Design Patterns", "slug": "Design-Patterns", "level": 2}
+    {"title": "Controls Library", "slug": "Controls-Library", "level": 1, "children": [
+      {"title": "Markdown Viewer", "slug": "Markdown-Viewer", "level": 2, "children": []},
+      {"title": "Markdown Editor", "slug": "Markdown-Editor", "level": 2, "children": []}
     ]},
-    {"title": "Controls Library", "slug": "Controls-Library", "level": 1, "sidebarSections": [
-      {"title": "MarkdownViewer", "anchor": "MarkdownViewer"},
-      {"title": "MarkdownEditor", "anchor": "MarkdownEditor"}
-    ], "children": []},
-    {"title": "CLI Reference", "slug": "CLI-Reference", "level": 1, "sidebarSections": [
-      {"title": "Keyboard Bindings", "anchor": "Keyboard-Bindings"},
-      {"title": "Supported Markdown", "anchor": "Supported-Markdown"}
-    ], "children": []},
-    {"title": "Contributing", "slug": "Contributing", "level": 1, "children": []},
+    {"title": "Supported Markdown", "slug": "Supported-Markdown", "level": 1, "children": []},
+    {"title": "Contributing", "slug": "Contributing", "level": 1,
+      "sidebarSections": [
+        {"title": "Architecture Constraints", "anchor": "Architecture-Constraints"},
+        {"title": "Testing", "anchor": "Testing"}
+      ],
+      "children": []},
     {"title": "For Agents", "slug": "For-Agents", "level": 1, "children": [
-      {"title": "AGENTS.md", "slug": "AGENTS.md", "level": 2},
-      {"title": "llms.txt", "slug": "llms.txt", "level": 2}
+      {"title": "AGENTS.md", "slug": "AGENTS", "level": 2, "children": []},
+      {"title": "llms.txt", "slug": "llms", "level": 2, "children": []}
     ]}
   ],
-  "generatedAt": "2026-06-03T00:27:46Z"
+  "pagesTemplateHash": "pages-regen-2026-06-15",
+  "generatedAt": "2026-06-15T14:13:51Z"
 }

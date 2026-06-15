@@ -1,102 +1,135 @@
 {
   "Home": {
     "sourceFiles": [
-      {"path": "README.md", "hash": "readme"},
-      {"path": "docs/vision.md", "hash": "vision"}
+      {"path": "README.md", "hash": "regen-2026-06-15"},
+      {"path": "docs/vision.md", "hash": "regen-2026-06-15"}
     ],
-    "templateHash": "home-section",
-    "generatedAt": "2026-06-03T00:27:46Z"
+    "templateHash": "pages-regen-2026-06-15",
+    "generatedAt": "2026-06-15T14:13:51Z"
   },
   "Getting-Started": {
     "sourceFiles": [
-      {"path": "README.md", "hash": "readme"},
-      {"path": "docs/reference/configuration.md", "hash": "config"}
+      {"path": "README.md", "hash": "regen-2026-06-15"}
     ],
-    "templateHash": "getting-started-section",
-    "generatedAt": "2026-06-03T00:27:46Z"
+    "templateHash": "pages-regen-2026-06-15",
+    "generatedAt": "2026-06-15T14:13:51Z"
+  },
+  "CLI-Reference": {
+    "sourceFiles": [
+      {"path": "README.md", "hash": "regen-2026-06-15"},
+      {"path": "src/Mked.Console/ViewCommand.cs", "hash": "regen-2026-06-15"},
+      {"path": "src/Mked.Console/EditCommand.cs", "hash": "regen-2026-06-15"},
+      {"path": "src/Mked.Console/ViewSettings.cs", "hash": "regen-2026-06-15"},
+      {"path": "src/Mked.Console/EditSettings.cs", "hash": "regen-2026-06-15"}
+    ],
+    "templateHash": "pages-regen-2026-06-15",
+    "generatedAt": "2026-06-15T14:13:51Z"
+  },
+  "Keyboard-Shortcuts": {
+    "sourceFiles": [
+      {"path": "README.md", "hash": "regen-2026-06-15"},
+      {"path": "docs/reference/keyboard-bindings.md", "hash": "regen-2026-06-15"}
+    ],
+    "templateHash": "pages-regen-2026-06-15",
+    "generatedAt": "2026-06-15T14:13:51Z"
   },
   "Architecture": {
     "sourceFiles": [
-      {"path": "docs/architecture/clean-architecture.md", "hash": "clean-arch"},
-      {"path": "docs/architecture/solution-structure.md", "hash": "sol-struct"}
+      {"path": "docs/architecture/clean-architecture.md", "hash": "regen-2026-06-15"},
+      {"path": "docs/architecture/solution-structure.md", "hash": "regen-2026-06-15"}
     ],
-    "templateHash": "arch-v1",
-    "generatedAt": "2026-06-03T00:12:25Z"
+    "templateHash": "pages-regen-2026-06-15",
+    "generatedAt": "2026-06-15T14:13:51Z"
   },
   "Domain-Layer": {
     "sourceFiles": [
-      {"path": "src/Mked.Domain/EditorState.cs", "hash": "editorstate"},
-      {"path": "src/Mked.Domain/ViewerState.cs", "hash": "viewerstate"},
-      {"path": "src/Mked.Domain/MarkdownDocument.cs", "hash": "markdowndoc"},
-      {"path": "src/Mked.Domain/Result.cs", "hash": "result"},
-      {"path": "src/Mked.Domain/Maybe.cs", "hash": "maybe"},
-      {"path": "src/Mked.Domain/MkedError.cs", "hash": "mkederror"},
-      {"path": "src/Mked.Domain/CursorPosition.cs", "hash": "cursorpos"},
-      {"path": "src/Mked.Domain/TextRange.cs", "hash": "textrange"},
-      {"path": "src/Mked.Domain/ViewportAnchor.cs", "hash": "vpanchor"}
+      {"path": "docs/architecture/editor-state.md", "hash": "regen-2026-06-15"},
+      {"path": "docs/architecture/result-types.md", "hash": "regen-2026-06-15"},
+      {"path": "src/Mked.Domain/IFileReader.cs", "hash": "regen-2026-06-15"},
+      {"path": "src/Mked.Domain/IFileWriter.cs", "hash": "regen-2026-06-15"},
+      {"path": "src/Mked.Domain/IInputReader.cs", "hash": "regen-2026-06-15"},
+      {"path": "src/Mked.Domain/IFileWatcher.cs", "hash": "regen-2026-06-15"}
     ],
-    "templateHash": "domain-v1",
-    "generatedAt": "2026-06-03T00:12:25Z"
+    "templateHash": "pages-regen-2026-06-15",
+    "generatedAt": "2026-06-15T14:13:51Z"
   },
   "Application-Layer": {
     "sourceFiles": [
-      {"path": "src/Mked.Application/OpenFileUseCase.cs", "hash": "openfile"},
-      {"path": "src/Mked.Application/SaveFileUseCase.cs", "hash": "savefile"},
-      {"path": "src/Mked.Application/NewDocumentUseCase.cs", "hash": "newdoc"},
-      {"path": "src/Mked.Application/RenderDocumentUseCase.cs", "hash": "renderdoc"},
-      {"path": "src/Mked.Application/StreamInputUseCase.cs", "hash": "streaminput"},
-      {"path": "src/Mked.Application/IMarkdownRenderer.cs", "hash": "irenderer"},
-      {"path": "src/Mked.Application/RenderContext.cs", "hash": "renderctx"}
+      {"path": "docs/architecture/railway-oriented-programming.md", "hash": "regen-2026-06-15"},
+      {"path": "src/Mked.Application/OpenFileUseCase.cs", "hash": "regen-2026-06-15"},
+      {"path": "src/Mked.Application/SaveFileUseCase.cs", "hash": "regen-2026-06-15"},
+      {"path": "src/Mked.Application/NewDocumentUseCase.cs", "hash": "regen-2026-06-15"},
+      {"path": "src/Mked.Application/RenderDocumentUseCase.cs", "hash": "regen-2026-06-15"},
+      {"path": "src/Mked.Application/StreamInputUseCase.cs", "hash": "regen-2026-06-15"}
     ],
-    "templateHash": "app-v1",
-    "generatedAt": "2026-06-03T00:12:25Z"
+    "templateHash": "pages-regen-2026-06-15",
+    "generatedAt": "2026-06-15T14:13:51Z"
   },
   "Infrastructure-Layer": {
     "sourceFiles": [
-      {"path": "src/Mked.Infrastructure/FileSystemReader.cs", "hash": "fsreader"},
-      {"path": "src/Mked.Infrastructure/FileSystemWriter.cs", "hash": "fswriter"},
-      {"path": "src/Mked.Infrastructure/FileWatcherAdapter.cs", "hash": "filewatcher"},
-      {"path": "src/Mked.Infrastructure/StdinInputReader.cs", "hash": "stdinreader"}
+      {"path": "src/Mked.Infrastructure/FileSystemReader.cs", "hash": "regen-2026-06-15"},
+      {"path": "src/Mked.Infrastructure/FileSystemWriter.cs", "hash": "regen-2026-06-15"},
+      {"path": "src/Mked.Infrastructure/FileWatcherAdapter.cs", "hash": "regen-2026-06-15"},
+      {"path": "src/Mked.Infrastructure/StdinInputReader.cs", "hash": "regen-2026-06-15"},
+      {"path": "src/Mked.Domain/IFileReader.cs", "hash": "regen-2026-06-15"},
+      {"path": "src/Mked.Domain/IFileWriter.cs", "hash": "regen-2026-06-15"},
+      {"path": "src/Mked.Domain/IInputReader.cs", "hash": "regen-2026-06-15"},
+      {"path": "src/Mked.Domain/IFileWatcher.cs", "hash": "regen-2026-06-15"}
     ],
-    "templateHash": "infra-v1",
-    "generatedAt": "2026-06-03T00:12:25Z"
+    "templateHash": "pages-regen-2026-06-15",
+    "generatedAt": "2026-06-15T14:13:51Z"
   },
   "Controls-Library": {
     "sourceFiles": [
-      {"path": "docs/architecture/solution-structure.md", "hash": "sol-struct"},
-      {"path": "docs/vision.md", "hash": "vision"}
+      {"path": "docs/reference/controls-public-api.md", "hash": "regen-2026-06-15"},
+      {"path": "docs/architecture/solution-structure.md", "hash": "regen-2026-06-15"}
     ],
-    "templateHash": "controls-v1",
-    "generatedAt": "2026-06-03T00:12:25Z"
+    "templateHash": "pages-regen-2026-06-15",
+    "generatedAt": "2026-06-15T14:13:51Z"
   },
-  "Getting-Started": {
+  "Markdown-Viewer": {
     "sourceFiles": [
-      {"path": "README.md", "hash": "short"},
-      {"path": "docs/vision.md", "hash": "vision"}
+      {"path": "docs/reference/controls-public-api.md", "hash": "regen-2026-06-15"}
     ],
-    "templateHash": "getstart-v1",
-    "generatedAt": "2026-06-03T00:12:25Z"
+    "templateHash": "pages-regen-2026-06-15",
+    "generatedAt": "2026-06-15T14:13:51Z"
   },
-  "Keyboard-Bindings": {
+  "Markdown-Editor": {
     "sourceFiles": [
-      {"path": "docs/reference/keyboard-bindings.md", "hash": "keybindings"}
+      {"path": "docs/reference/controls-public-api.md", "hash": "regen-2026-06-15"},
+      {"path": "src/Mked.Console/HighlightMapper.cs", "hash": "regen-2026-06-15"}
     ],
-    "templateHash": "keybind-v1",
-    "generatedAt": "2026-06-03T00:12:25Z"
+    "templateHash": "pages-regen-2026-06-15",
+    "generatedAt": "2026-06-15T14:13:51Z"
   },
   "Supported-Markdown": {
     "sourceFiles": [
-      {"path": "docs/reference/supported-markdown.md", "hash": "suppmd"}
+      {"path": "docs/reference/supported-markdown.md", "hash": "regen-2026-06-15"}
     ],
-    "templateHash": "suppmd-v1",
-    "generatedAt": "2026-06-03T00:12:25Z"
+    "templateHash": "pages-regen-2026-06-15",
+    "generatedAt": "2026-06-15T14:13:51Z"
   },
   "Contributing": {
     "sourceFiles": [
-      {"path": "docs/architecture/clean-architecture.md", "hash": "clean-arch"},
-      {"path": "docs/architecture/solution-structure.md", "hash": "sol-struct"}
+      {"path": "docs/architecture/aot-trim-safety.md", "hash": "regen-2026-06-15"},
+      {"path": "docs/architecture/testing-conventions.md", "hash": "regen-2026-06-15"}
     ],
-    "templateHash": "contrib-v1",
-    "generatedAt": "2026-06-03T00:12:25Z"
+    "templateHash": "pages-regen-2026-06-15",
+    "generatedAt": "2026-06-15T14:13:51Z"
+  },
+  "For-Agents": {
+    "sourceFiles": [],
+    "templateHash": "pages-regen-2026-06-15",
+    "generatedAt": "2026-06-15T14:13:51Z"
+  },
+  "AGENTS": {
+    "sourceFiles": [],
+    "templateHash": "pages-regen-2026-06-15",
+    "generatedAt": "2026-06-15T14:13:51Z"
+  },
+  "llms": {
+    "sourceFiles": [],
+    "templateHash": "pages-regen-2026-06-15",
+    "generatedAt": "2026-06-15T14:13:51Z"
   }
 }
