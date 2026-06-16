@@ -41,4 +41,5 @@ jobs:
         run: |
           dotnet nuget push ./artifacts/*.nupkg \
             --source https://nuget.pkg.github.com/scmccart/index.json \
-            --api-key ${{ secrets.GITHUB_TOKEN }}
+            --api-key ${{ secrets.GITHUB_TOKEN }} \
+            --skip-duplicate

@@ -6,12 +6,13 @@ public class EditorState_Insert_Tests
     public void Insert_IntoEmptyBuffer_FiresOnBufferChangedWithInsertedText()
     {
         var state = new EditorState(string.Empty);
-        var obs = new Mock<IEditorObserver>();
-        state.Subscribe(obs.Object);
+        var spy = new SpyObserver();
+        state.Subscribe(spy);
 
         state.Insert(new CursorPosition(1, 1), "hello");
 
-        obs.Verify(o => o.OnBufferChanged("hello"), Times.Once());
+        spy.LastBuffer.Should().Be("hello");
+        spy.BufferCallCount.Should().Be(1);
     }
 
     [Fact]
@@ -59,11 +60,12 @@ public class EditorState_Insert_Tests
     public void Insert_Observer_ReceivesCorrectBufferContent()
     {
         var state = new EditorState("world");
-        var obs = new Mock<IEditorObserver>();
-        state.Subscribe(obs.Object);
+        var spy = new SpyObserver();
+        state.Subscribe(spy);
 
         state.Insert(new CursorPosition(1, 1), "hello ");
 
-        obs.Verify(o => o.OnBufferChanged("hello world"), Times.Once());
+        spy.LastBuffer.Should().Be("hello world");
+        spy.BufferCallCount.Should().Be(1);
     }
 }

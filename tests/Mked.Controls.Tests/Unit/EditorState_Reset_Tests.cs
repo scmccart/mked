@@ -2,26 +2,6 @@ namespace Mked.Controls.Tests;
 
 public class EditorState_Reset_Tests
 {
-    private sealed class SpyObserver : IEditorObserver
-    {
-        public string? LastBuffer { get; private set; }
-        public CursorPosition? LastCursor { get; private set; }
-        public int BufferCallCount { get; private set; }
-        public int CursorCallCount { get; private set; }
-
-        public void OnBufferChanged(string newBuffer)
-        {
-            LastBuffer = newBuffer;
-            BufferCallCount++;
-        }
-
-        public void OnCursorMoved(CursorPosition position)
-        {
-            LastCursor = position;
-            CursorCallCount++;
-        }
-    }
-
     [Fact]
     public void Reset_SetsBufferToNewContent()
     {

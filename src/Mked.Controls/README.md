@@ -8,14 +8,29 @@ no dependency on the `mked` tool required.
 
 ## Install
 
-```shell
-dotnet add package Mked.Controls --source https://nuget.pkg.github.com/scmccart/index.json
+`Mked.Controls` is published to the GitHub Packages NuGet feed. Because its transitive
+dependencies (Markdig, Spectre.Console) come from nuget.org, your project needs **both** feeds
+configured. Add a `nuget.config` at your solution or project root:
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<configuration>
+  <packageSources>
+    <add key="nuget.org" value="https://api.nuget.org/v3/index.json" protocolVersion="3" />
+    <add key="mked-github" value="https://nuget.pkg.github.com/scmccart/index.json" protocolVersion="3" />
+  </packageSources>
+</configuration>
 ```
 
-> **Note:** This package is currently published to the GitHub Packages feed. Consuming it
-> requires a `nuget.config` pointing at `https://nuget.pkg.github.com/scmccart/index.json`
-> and a GitHub Personal Access Token (PAT) with `read:packages` scope.
-> See [GitHub Docs — Authenticating to GitHub Packages](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-nuget-registry#authenticating-to-github-packages).
+Then add the package as usual:
+
+```shell
+dotnet add package Mked.Controls
+```
+
+> **Authentication:** GitHub Packages requires a Personal Access Token (PAT) with `read:packages`
+> scope. Add it to your `nuget.config` credentials or set the `NUGET_AUTH_TOKEN` environment
+> variable. See [GitHub Docs — Authenticating to GitHub Packages](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-nuget-registry#authenticating-to-github-packages).
 
 ## MarkdownViewer
 

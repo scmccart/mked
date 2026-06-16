@@ -16,10 +16,6 @@
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
       <_Parameter1>Mked.Controls.Tests</_Parameter1>
     </AssemblyAttribute>
-    <!-- Castle DynamicProxy (used by Moq) also needs internal access to mock internal interfaces -->
-    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
-      <_Parameter1>DynamicProxyGenAssembly2</_Parameter1>
-    </AssemblyAttribute>
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Markdig" />

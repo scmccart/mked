@@ -97,24 +97,24 @@ public class EditorState_CursorMovement_Tests
     {
         var state = new EditorState("hi");
         state.UpdateCursor(new CursorPosition(1, 2));
-        var obs = new Mock<IEditorObserver>();
-        state.Subscribe(obs.Object);
+        var spy = new SpyObserver();
+        state.Subscribe(spy);
 
         state.MoveCursorLeft();
 
-        obs.Verify(o => o.OnCursorMoved(It.IsAny<CursorPosition>()), Times.Once());
+        spy.CursorCallCount.Should().Be(1);
     }
 
     [Fact]
     public void MoveCursorRight_FiresOnCursorMoved()
     {
         var state = new EditorState("hi");
-        var obs = new Mock<IEditorObserver>();
-        state.Subscribe(obs.Object);
+        var spy = new SpyObserver();
+        state.Subscribe(spy);
 
         state.MoveCursorRight();
 
-        obs.Verify(o => o.OnCursorMoved(It.IsAny<CursorPosition>()), Times.Once());
+        spy.CursorCallCount.Should().Be(1);
     }
 
     // ── Undo stack not touched ────────────────────────────────────────────────

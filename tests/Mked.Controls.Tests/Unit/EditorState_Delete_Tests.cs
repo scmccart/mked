@@ -6,13 +6,14 @@ public class EditorState_Delete_Tests
     public void Delete_SingleChar_FiresOnBufferChangedWithCharRemoved()
     {
         var state = new EditorState("hello");
-        var obs = new Mock<IEditorObserver>();
-        state.Subscribe(obs.Object);
+        var spy = new SpyObserver();
+        state.Subscribe(spy);
         var range = new TextRange(new CursorPosition(1, 1), new CursorPosition(1, 2));
 
         state.Delete(range);
 
-        obs.Verify(o => o.OnBufferChanged("ello"), Times.Once());
+        spy.LastBuffer.Should().Be("ello");
+        spy.BufferCallCount.Should().Be(1);
     }
 
     [Fact]
@@ -42,14 +43,15 @@ public class EditorState_Delete_Tests
     public void Delete_Observer_ReceivesCorrectBufferContent()
     {
         var state = new EditorState("abcd");
-        var obs = new Mock<IEditorObserver>();
-        state.Subscribe(obs.Object);
+        var spy = new SpyObserver();
+        state.Subscribe(spy);
         // Delete "bc" — positions (1,2) to (1,4)
         var range = new TextRange(new CursorPosition(1, 2), new CursorPosition(1, 4));
 
         state.Delete(range);
 
-        obs.Verify(o => o.OnBufferChanged("ad"), Times.Once());
+        spy.LastBuffer.Should().Be("ad");
+        spy.BufferCallCount.Should().Be(1);
     }
 
     // ── Cursor repositioning & single undo step ───────────────────────────────
@@ -86,13 +88,14 @@ public class EditorState_Delete_Tests
     public void Delete_Observer_NotifiedOfCursorMoveToRangeStart()
     {
         var state = new EditorState("hello");
-        var obs = new Mock<IEditorObserver>();
-        state.Subscribe(obs.Object);
+        var spy = new SpyObserver();
+        state.Subscribe(spy);
         var start = new CursorPosition(1, 2);
         var range = new TextRange(start, new CursorPosition(1, 4));
 
         state.Delete(range);
 
-        obs.Verify(o => o.OnCursorMoved(start), Times.Once());
+        spy.LastCursor.Should().Be(start);
+        spy.CursorCallCount.Should().Be(1);
     }
 }
