@@ -44,7 +44,7 @@ minor enrichments to enable semantic error distinctions.
 
 | Layer | Project | Changes |
 |-------|---------|---------|
-| Domain | `Mked.Domain` | `MkedError.IoError` gains an `IoKind` discriminant (`ReadNotFound`, `ReadAccessDenied`, `WriteAccessDenied`, `WriteGeneric`); no new top-level cases |
+| Domain | `Mked.Domain` | `MkedError.IoError` gains an `IoKind` discriminant (`ReadNotFound`, `ReadAccessDenied`, `ReadGeneric`, `WriteAccessDenied`, `WriteGeneric`); no new top-level cases |
 | Application | `Mked.Application` | None — use cases are correct; they receive injected ports already |
 | Infrastructure | `Mked.Infrastructure` | `FileSystemReader` and `FileSystemWriter` produce the richer `IoKind` values in their exception handlers |
 | Presentation | `Mked.Console` | All structural additions live here: composition root, DI bridge, error presenter, exit codes, renderer selector, plain-text renderer, terminal lifecycle |
@@ -86,7 +86,7 @@ settings binding). Publish must be smoke-tested with `-p:PublishAot=true`.
 | `ViewCommand` | Constructor injection of `OpenFileUseCase`, `StreamInputUseCase`; dispatch order update for stdin auto-detect; replace both `FormatError` calls with `ErrorPresenter.Show`; wrap interactive entry in `TerminalLifecycle` | DI, UX parity, standardized errors |
 | `EditCommand` | Constructor injection of `OpenFileUseCase`, `SaveFileUseCase`; replace `FormatError` with `ErrorPresenter.Show`; wrap in `TerminalLifecycle` | DI, standardized errors, clean shutdown |
 | `Program.cs` | Build `ServiceCollection`, pass `TypeRegistrar` to `CommandApp`; configure Spectre exception handler for usage errors → exit 1 | Composition root |
-| `FileSystemReader` | Produce `IoKind.ReadNotFound` / `IoKind.ReadAccessDenied` | Semantic error distinction |
+| `FileSystemReader` | Produce `IoKind.ReadNotFound` / `IoKind.ReadAccessDenied` / `IoKind.ReadGeneric` | Semantic error distinction |
 | `FileSystemWriter` | Distinguish `UnauthorizedAccessException` → `IoKind.WriteAccessDenied`; other `IOException` → `IoKind.WriteGeneric` | Semantic error distinction |
 
 ---
@@ -204,6 +204,8 @@ public static class ErrorPresenter
                 ("File not found", e.Path, ExitCode.Io),
             MkedError.IoError { Kind: IoKind.ReadAccessDenied } e =>
                 ("Permission denied", $"Cannot read: {e.Path}", ExitCode.Io),
+            MkedError.IoError { Kind: IoKind.ReadGeneric } e =>
+                ("Read error", $"{e.Path}: {e.Reason}", ExitCode.Io),
             MkedError.IoError { Kind: IoKind.WriteAccessDenied } e =>
                 ("Permission denied", $"Cannot write: {e.Path}", ExitCode.Io),
             MkedError.IoError { Kind: IoKind.WriteGeneric } e =>

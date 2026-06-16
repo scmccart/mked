@@ -23,8 +23,10 @@ mked/
     │   └── Mked.Application.Tests.csproj
     ├── Mked.Infrastructure.Tests/
     │   └── Mked.Infrastructure.Tests.csproj
-    └── Mked.Controls.Tests/
-        └── Mked.Controls.Tests.csproj
+    ├── Mked.Controls.Tests/
+    │   └── Mked.Controls.Tests.csproj
+    └── Mked.Console.Tests/
+        └── Mked.Console.Tests.csproj
 ```
 
 ## Projects
@@ -91,8 +93,7 @@ Each `src/` project except `Mked.Console` has a corresponding test project under
 | `Mked.Application.Tests` | Use cases with in-memory fakes of domain interfaces |
 | `Mked.Infrastructure.Tests` | Adapter behaviour against a temp directory or in-memory stream |
 | `Mked.Controls.Tests` | Widget state transitions, render output, keyboard input handling |
-
-`Mked.Console` has no dedicated unit test project; CLI behaviour is verified through integration tests or manual testing.
+| `Mked.Console.Tests` | Command dispatch, exit codes, error presenter, and renderer selector via Spectre's `CommandAppTester`; architecture rules confirming only the composition-root namespace references `Mked.Infrastructure` |
 
 ## NuGet package identities
 
