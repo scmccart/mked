@@ -1,7 +1,7 @@
 namespace Mked.Controls;
 
 /// <summary>Observer that receives notifications when editor state changes.</summary>
-public interface IEditorObserver
+internal interface IEditorObserver
 {
     /// <summary>Called when the text buffer is replaced with <paramref name="newBuffer"/>.</summary>
     public void OnBufferChanged(string newBuffer);

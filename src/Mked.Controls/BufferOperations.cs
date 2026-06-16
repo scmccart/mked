@@ -1,7 +1,7 @@
 namespace Mked.Controls;
 
 /// <summary>Pure string operations on a newline-delimited text buffer.</summary>
-public static class BufferOperations
+internal static class BufferOperations
 {
     /// <summary>
     /// Inserts <paramref name="text"/> into <paramref name="buffer"/> at the given

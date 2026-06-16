@@ -4,6 +4,7 @@
   </PropertyGroup>
   <ItemGroup Label="Production">
     <PackageVersion Include="Markdig" Version="1.2.0" />
+    <PackageVersion Include="MinVer" Version="7.0.0" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.0" />
     <PackageVersion Include="Spectre.Console" Version="0.55.2" />
     <PackageVersion Include="Spectre.Console.Cli" Version="0.55.0" />

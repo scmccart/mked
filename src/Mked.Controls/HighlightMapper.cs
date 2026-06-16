@@ -1,7 +1,7 @@
 namespace Mked.Controls;
 
 /// <summary>Converts <see cref="HighlightSpan"/> values to <see cref="StyledSpan"/> values.</summary>
-public static class HighlightMapper
+internal static class HighlightMapper
 {
     /// <summary>
     /// Maps each <see cref="HighlightSpan"/> in <paramref name="spans"/> to a <see cref="StyledSpan"/>

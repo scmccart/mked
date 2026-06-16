@@ -1,7 +1,7 @@
 namespace Mked.Controls;
 
 /// <summary>Identifies the syntactic role of a highlighted region in a Markdown document.</summary>
-public enum HighlightKind
+internal enum HighlightKind
 {
     /// <summary>ATX heading marker and text (<c># Heading</c>).</summary>
     Heading,
