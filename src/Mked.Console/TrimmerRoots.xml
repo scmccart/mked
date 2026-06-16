@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Preserve reflection metadata required by Spectre.Console.Cli's internal
+  ConfiguredCommand.FromType<TCommand>(), which walks the base-class generic
+  argument chain to discover the TSettings type at runtime.
+-->
+<linker>
+  <assembly fullname="Mked.Console">
+    <type fullname="Mked.Console.ViewCommand" preserve="all" />
+    <type fullname="Mked.Console.ViewSettings" preserve="all" />
+    <type fullname="Mked.Console.EditCommand" preserve="all" />
+    <type fullname="Mked.Console.EditSettings" preserve="all" />
+  </assembly>
+  <assembly fullname="Spectre.Console.Cli">
+    <type fullname="Spectre.Console.Cli.AsyncCommand`1" preserve="all" />
+  </assembly>
+</linker>

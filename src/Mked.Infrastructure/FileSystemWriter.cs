@@ -42,10 +42,15 @@ public sealed class FileSystemWriter : IFileWriter
             File.Move(tempPath, path, overwrite: true);
             return Result.Ok<Unit, MkedError>(Unit.Value);
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        catch (UnauthorizedAccessException ex)
         {
             try { File.Delete(tempPath); } catch { /* best-effort cleanup */ }
-            return Result.Err<Unit, MkedError>(new MkedError.IoError(path, ex.Message));
+            return Result.Err<Unit, MkedError>(new MkedError.IoError(path, ex.Message, IoKind.WriteAccessDenied));
+        }
+        catch (IOException ex)
+        {
+            try { File.Delete(tempPath); } catch { /* best-effort cleanup */ }
+            return Result.Err<Unit, MkedError>(new MkedError.IoError(path, ex.Message, IoKind.WriteGeneric));
         }
     }
 }

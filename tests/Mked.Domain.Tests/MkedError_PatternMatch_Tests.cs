@@ -19,7 +19,7 @@ public class MkedError_PatternMatch_Tests
 
         var matched = error switch
         {
-            MkedError.IoError(var path, _)          => $"io:{path}",
+            MkedError.IoError(var path, _, _)       => $"io:{path}",
             MkedError.ParseError(var l, var c, _)   => $"parse:{l},{c}",
             MkedError.ValidationError(var f, _)     => $"validation:{f}",
             MkedError.StreamError(var reason)       => $"stream:{reason}",

@@ -11,5 +11,6 @@
     <Project Path="tests/Mked.Infrastructure.Tests/Mked.Infrastructure.Tests.csproj" />
     <Project Path="tests/Mked.Application.Tests/Mked.Application.Tests.csproj" />
     <Project Path="tests/Mked.Controls.Tests/Mked.Controls.Tests.csproj" />
+    <Project Path="tests/Mked.Console.Tests/Mked.Console.Tests.csproj" />
   </Folder>
 </Solution>

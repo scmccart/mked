@@ -1,11 +1,18 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace Mked.Console;
 
 /// <summary>
 /// The <c>mked edit</c> command. Opens a file (or a blank document) in an interactive
 /// Markdown editor with syntax highlighting, undo/redo, and save support.
 /// </summary>
-public sealed class EditCommand : AsyncCommand<EditSettings>
+[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+public sealed class EditCommand(OpenFileUseCase openFile, SaveFileUseCase saveFile)
+    : AsyncCommand<EditSettings>
 {
+    private readonly OpenFileUseCase _openFile = openFile;
+    private readonly SaveFileUseCase _saveFile = saveFile;
+
     private enum HostAction { None, Save, New, Open, Quit }
 
     private sealed class EditSession
@@ -26,12 +33,9 @@ public sealed class EditCommand : AsyncCommand<EditSettings>
 
         if (settings.Path is not null)
         {
-            var result = await new OpenFileUseCase(new FileSystemReader()).ExecuteAsync(settings.Path);
+            var result = await _openFile.ExecuteAsync(settings.Path);
             if (result is Result<OpenedFile, MkedError>.Err(var openErr))
-            {
-                AnsiConsole.MarkupLine($"[red bold]Error:[/] {Markup.Escape(FormatError(openErr))}");
-                return 1;
-            }
+                return ErrorPresenter.Show(openErr);
             var file = ((Result<OpenedFile, MkedError>.Ok)result).Value;
             editor.LoadDocument(file.Source);
             session.FilePath = settings.Path;
@@ -42,7 +46,10 @@ public sealed class EditCommand : AsyncCommand<EditSettings>
         bool previewSourceChanged = false;
         editor.BufferChanged += md => { previewSource = md; previewSourceChanged = true; };
 
-        while (!session.Cancelled && !cancellationToken.IsCancellationRequested)
+        using var outerCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        using var lifecycle = new TerminalLifecycle(outerCts);
+
+        while (!session.Cancelled && !outerCts.Token.IsCancellationRequested)
         {
             session.PendingAction = HostAction.None;
 
@@ -62,7 +69,7 @@ public sealed class EditCommand : AsyncCommand<EditSettings>
 
             await AnsiConsole.Live(BuildLayout(editor, preview, session)).StartAsync(async liveCtx =>
             {
-                using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                using var cts = CancellationTokenSource.CreateLinkedTokenSource(outerCts.Token);
                 liveCtx.UpdateTarget(BuildLayout(editor, preview, session));
 
                 int lastW = AnsiConsole.Profile.Width;
@@ -208,19 +215,19 @@ public sealed class EditCommand : AsyncCommand<EditSettings>
             switch (session.PendingAction)
             {
                 case HostAction.Save:
-                    await SaveAsync(session, editor);
+                    await SaveAsync(session, editor, _saveFile);
                     break;
 
                 case HostAction.Quit:
-                    await HandleQuitAsync(session, editor);
+                    await HandleQuitAsync(session, editor, _saveFile);
                     break;
 
                 case HostAction.New:
-                    await HandleNewAsync(session, editor);
+                    await HandleNewAsync(session, editor, _saveFile);
                     break;
 
                 case HostAction.Open:
-                    await HandleOpenAsync(session, editor);
+                    await HandleOpenAsync(session, editor, _openFile, _saveFile);
                     break;
             }
         }
@@ -230,20 +237,19 @@ public sealed class EditCommand : AsyncCommand<EditSettings>
 
     // ─── File operations ──────────────────────────────────────────────────────
 
-    private static async Task SaveAsync(EditSession session, MarkdownEditor editor)
+    private static async Task SaveAsync(EditSession session, MarkdownEditor editor, SaveFileUseCase saveFile)
     {
         if (session.FilePath is null)
             session.FilePath = AnsiConsole.Ask<string>("Save as: ");
 
-        var result = await new SaveFileUseCase(new FileSystemWriter())
-            .ExecuteAsync(session.FilePath, editor.Buffer);
+        var result = await saveFile.ExecuteAsync(session.FilePath, editor.Buffer);
         if (result is Result<Unit, MkedError>.Err(var err))
-            AnsiConsole.MarkupLine($"[red]{Markup.Escape(FormatError(err))}[/]");
+            ErrorPresenter.Show(err);
         else
             editor.MarkClean();
     }
 
-    private static async Task HandleQuitAsync(EditSession session, MarkdownEditor editor)
+    private static async Task HandleQuitAsync(EditSession session, MarkdownEditor editor, SaveFileUseCase saveFile)
     {
         if (!editor.IsDirty)
         {
@@ -258,7 +264,7 @@ public sealed class EditCommand : AsyncCommand<EditSettings>
 
         if (choice == "Save and quit")
         {
-            await SaveAsync(session, editor);
+            await SaveAsync(session, editor, saveFile);
             session.Cancelled = true;
         }
         else if (choice == "Quit without saving")
@@ -267,7 +273,7 @@ public sealed class EditCommand : AsyncCommand<EditSettings>
         }
     }
 
-    private static async Task HandleNewAsync(EditSession session, MarkdownEditor editor)
+    private static async Task HandleNewAsync(EditSession session, MarkdownEditor editor, SaveFileUseCase saveFile)
     {
         if (editor.IsDirty)
         {
@@ -277,7 +283,7 @@ public sealed class EditCommand : AsyncCommand<EditSettings>
                     .AddChoices("Save and new", "Discard and new", "Cancel"));
 
             if (choice == "Save and new")
-                await SaveAsync(session, editor);
+                await SaveAsync(session, editor, saveFile);
             else if (choice == "Cancel")
                 return;
         }
@@ -286,7 +292,7 @@ public sealed class EditCommand : AsyncCommand<EditSettings>
         session.FilePath = null;
     }
 
-    private static async Task HandleOpenAsync(EditSession session, MarkdownEditor editor)
+    private static async Task HandleOpenAsync(EditSession session, MarkdownEditor editor, OpenFileUseCase openFile, SaveFileUseCase saveFile)
     {
         if (editor.IsDirty)
         {
@@ -296,13 +302,13 @@ public sealed class EditCommand : AsyncCommand<EditSettings>
                     .AddChoices("Save and open", "Discard and open", "Cancel"));
 
             if (choice == "Save and open")
-                await SaveAsync(session, editor);
+                await SaveAsync(session, editor, saveFile);
             else if (choice == "Cancel")
                 return;
         }
 
         string path = AnsiConsole.Ask<string>("Open file: ");
-        var result = await new OpenFileUseCase(new FileSystemReader()).ExecuteAsync(path);
+        var result = await openFile.ExecuteAsync(path);
 
         if (result is Result<OpenedFile, MkedError>.Ok(var openedFile))
         {
@@ -311,7 +317,7 @@ public sealed class EditCommand : AsyncCommand<EditSettings>
         }
         else if (result is Result<OpenedFile, MkedError>.Err(var err))
         {
-            AnsiConsole.MarkupLine($"[red]{Markup.Escape(FormatError(err))}[/]");
+            ErrorPresenter.Show(err);
         }
     }
 
@@ -356,10 +362,4 @@ public sealed class EditCommand : AsyncCommand<EditSettings>
     private static int ComputeViewportHeight(int terminalHeight, bool split) =>
         split ? terminalHeight - 3 : terminalHeight - 1;
 
-    private static string FormatError(MkedError error) => error switch
-    {
-        MkedError.IoError e => $"{e.Path}: {e.Reason}",
-        MkedError.ValidationError e => $"{e.Field}: {e.Message}",
-        _ => error.ToString() ?? "Unknown error",
-    };
 }
