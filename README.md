@@ -33,8 +33,8 @@ mked view <path> [options]
 |-----|--------|
 | `j` / `↓` | Scroll down one line |
 | `k` / `↑` | Scroll up one line |
-| `Shift+j` / `Shift+↓` | Scroll down one block |
-| `Shift+k` / `Shift+↑` | Scroll up one block |
+| `Shift+J` / `Shift+↓` | Jump to next block boundary |
+| `Shift+K` / `Shift+↑` | Jump to previous block boundary |
 | `PageDown` / `Ctrl+D` | Scroll down half a page |
 | `PageUp` / `Ctrl+U` | Scroll up half a page |
 | `g` | Jump to top |
@@ -87,6 +87,8 @@ Omit `path` to start with a blank document.
 | `Ctrl+←` / `Ctrl+→` | Move cursor one word left / right |
 | `Home` | Move to start of line |
 | `End` | Move to end of line |
+| `Tab` | Insert a two-space indent |
+| `Shift+Tab` | Switch focus to the preview pane (split mode) |
 | `Ctrl+Z` | Undo |
 | `Ctrl+Y` | Redo |
 | `Ctrl+S` | Save (prompts for a path when editing a new document) |

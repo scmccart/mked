@@ -1,0 +1,19 @@
+# mked
+
+> A terminal-native Markdown viewer and editor for .NET — AOT-compiled, keyboard-driven, with live syntax highlighting and viewport-stable rendering.
+
+## Wiki Pages
+
+- [Home](https://github.com/scmccart/mked/wiki/Home): Project overview, key features, and quick start
+- [Getting Started](https://github.com/scmccart/mked/wiki/Getting-Started): Installation and first steps
+- [CLI Reference](https://github.com/scmccart/mked/wiki/CLI-Reference): mked view and mked edit command reference
+- [Keyboard Shortcuts](https://github.com/scmccart/mked/wiki/Keyboard-Shortcuts): All viewer and editor keyboard shortcuts
+- [Architecture](https://github.com/scmccart/mked/wiki/Architecture): Clean Architecture layers and dependency graph
+- [Domain Layer](https://github.com/scmccart/mked/wiki/Domain-Layer): EditorState, Result/Maybe types, and highlight pipeline
+- [Application Layer](https://github.com/scmccart/mked/wiki/Application-Layer): Use cases and Railway-Oriented Programming pipelines
+- [Infrastructure Layer](https://github.com/scmccart/mked/wiki/Infrastructure-Layer): File system and I/O adapters
+- [Controls Library](https://github.com/scmccart/mked/wiki/Controls-Library): Mked.Controls NuGet package — Spectre.Console widgets
+- [Markdown Viewer](https://github.com/scmccart/mked/wiki/Markdown-Viewer): MarkdownViewer widget API and scroll pattern
+- [Markdown Editor](https://github.com/scmccart/mked/wiki/Markdown-Editor): MarkdownEditorWidget, EditorStatusLine, and StyledSpan
+- [Supported Markdown](https://github.com/scmccart/mked/wiki/Supported-Markdown): CommonMark + extensions and terminal rendering notes
+- [Contributing](https://github.com/scmccart/mked/wiki/Contributing): Build, test, architecture constraints, and AOT/trim safety
