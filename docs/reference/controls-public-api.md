@@ -5,6 +5,7 @@
 `Mked.Controls` extends Spectre.Console with terminal-native Markdown widgets:
 
 - `MarkdownViewer` — read-only, scrollable rendering of a Markdown string, implemented as an `IRenderable`
+- `MarkdownEditor` — higher-level interactive editor control; manages `EditorState`, handles keystrokes, and renders as an `IRenderable`
 - `MarkdownEditorWidget` — raw text buffer with a block cursor and syntax-highlight overlays, implemented as an `IRenderable`
 - `EditorStatusLine` — single-line status bar showing cursor position, dirty state, and word count, implemented as an `IRenderable`
 - `StyledSpan` — character-offset span with a Spectre.Console `Style`, used to pass highlight data into `MarkdownEditorWidget`
@@ -84,6 +85,78 @@ public sealed record MarkdownViewerScrollInfo(
 
 ---
 
+## MarkdownEditor
+
+Higher-level interactive editor control. Wraps `EditorState` and the highlight pipeline, exposes a simple keystroke API, and implements `IRenderable` so it can be placed directly in a Spectre.Console `Live` display.
+
+```csharp
+using Mked.Controls;
+
+var editor = new MarkdownEditor();          // blank document
+// — or —
+var editor = new MarkdownEditor(initialBuffer: existingText);
+editor.LoadDocument(existingText);          // replaces buffer and resets undo history
+```
+
+### Constructor
+
+```csharp
+public MarkdownEditor(string initialBuffer = "");
+```
+
+### Properties
+
+| Property | Type | Description |
+|---|---|---|
+| `Buffer` | `string` | Current text content (read-only). |
+| `Cursor` | `(int Line, int Column)` | 1-based cursor position (read-only). |
+| `IsDirty` | `bool` | `true` when the buffer differs from the last saved baseline. |
+| `CanUndo` | `bool` | `true` when there is an operation on the undo stack. |
+| `CanRedo` | `bool` | `true` when there is an operation on the redo stack. |
+| `WordCount` | `int` | Approximate word count of the current buffer. |
+| `HasFocus` | `bool` | Controls whether the block cursor is rendered. Set to `false` in split-view when the preview pane has focus. |
+| `ViewportHeight` | `int?` | Terminal rows available for the editor. Update on terminal resize. `null` renders all lines. |
+
+### Events
+
+| Event | Signature | Description |
+|---|---|---|
+| `BufferChanged` | `Action<string>?` | Raised after each buffer mutation with the new content. Subscribe to drive a live preview pane. |
+
+### Methods
+
+| Method | Returns | Description |
+|---|---|---|
+| `LoadDocument(string buffer)` | `void` | Replaces the buffer; resets undo/redo history, cursor (to `(1,1)`), dirty flag, and scroll position. |
+| `MarkClean()` | `void` | Marks the current buffer as the saved baseline. Call after a successful file save. |
+| `HandleKey(ConsoleKeyInfo key)` | `bool` | Processes a keystroke. Returns `true` if the buffer, cursor, or scroll changed (host should redraw). Returns `false` for unhandled keys (Save, Quit, Open, New, TogglePreview) so the host can respond to them. |
+| `StatusLine()` | `IRenderable` | Returns a single-line `EditorStatusLine` renderable for the current frame. |
+
+### Usage pattern
+
+```csharp
+// 1. Create and (optionally) pre-load
+var editor = new MarkdownEditor();
+
+// 2. Subscribe to buffer changes to drive a live preview
+editor.BufferChanged += md => previewSource = md;
+
+// 3. Pump keystrokes from the host loop
+while (Console.KeyAvailable)
+{
+    var key = Console.ReadKey(intercept: true);
+    if (editor.HandleKey(key))
+        dirty = true;          // redraw needed
+    else
+        HandleHostKey(key);    // Ctrl+S, Ctrl+Q, etc.
+}
+
+// 4. Render inside AnsiConsole.Live
+liveCtx.UpdateTarget(editor);
+```
+
+---
+
 ## MarkdownEditorWidget
 
 Renders a raw text buffer with a block cursor and syntax-highlight overlays. Implements `IRenderable`.
@@ -109,7 +182,8 @@ public MarkdownEditorWidget(
     (int Line, int Column) cursor,
     IReadOnlyList<StyledSpan> highlights,
     int topLineIndex = 0,
-    int? viewportHeight = null);
+    int? viewportHeight = null,
+    bool showCursor = true);
 ```
 
 | Parameter | Type | Description |
@@ -119,6 +193,7 @@ public MarkdownEditorWidget(
 | `highlights` | `IReadOnlyList<StyledSpan>` | Syntax-highlight overlays expressed as character-offset spans with `Style` values. |
 | `topLineIndex` | `int` | 0-based index of the first line to display. Defaults to `0`. |
 | `viewportHeight` | `int?` | Maximum number of terminal rows to render. `null` renders all lines. |
+| `showCursor` | `bool` | When `false`, the block-cursor highlight is suppressed. Set to `false` when the editor does not have focus in a split-view layout. Defaults to `true`. |
 
 ### Rendering notes
 
@@ -174,4 +249,4 @@ public readonly record struct StyledSpan(int StartOffset, int Length, Style Spec
 | `Length` | `int` | Number of characters covered by this span. |
 | `SpectreStyle` | `Style` | Spectre.Console `Style` applied to all characters in the span. |
 
-`StyledSpan` uses character offsets rather than `(line, column)` coordinates so it integrates directly with Spectre.Console's `Segment`-based rendering pipeline. Use `HighlightMapper.Map()` (in `Mked.Console`) to convert Domain `HighlightSpan` values (which carry `TextRange` coordinates) into `StyledSpan` values for use with this widget.
+`StyledSpan` uses character offsets rather than `(line, column)` coordinates so it integrates directly with Spectre.Console's `Segment`-based rendering pipeline. Use `HighlightMapper.Map()` (in `Mked.Controls`) to convert Domain `HighlightSpan` values (which carry `TextRange` coordinates) into `StyledSpan` values for use with this widget.

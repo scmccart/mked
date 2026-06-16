@@ -25,7 +25,7 @@ mked view <path> [options]
 | `-f`, `--follow` | Re-read and redisplay the file each time it changes on disk. |
 | `-s`, `--stream` | Read Markdown from stdin and update the viewer as data arrives. |
 | `--show-frontmatter` | Display the YAML front matter block above the document body. |
-| `-p`, `--plain` | Render link text only, omitting URLs. |
+| `-p`, `--plain` | Write plain text to stdout with no pager or ANSI codes. Auto-enabled when stdout is redirected. |
 
 **Keyboard navigation**
 
@@ -87,6 +87,7 @@ Omit `path` to start with a blank document.
 | `Ctrl+←` / `Ctrl+→` | Move cursor one word left / right |
 | `Home` | Move to start of line |
 | `End` | Move to end of line |
+| `Tab` | Insert a two-space indent |
 | `Ctrl+Z` | Undo |
 | `Ctrl+Y` | Redo |
 | `Ctrl+S` | Save (prompts for a path when editing a new document) |

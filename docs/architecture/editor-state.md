@@ -6,7 +6,7 @@ syntax-highlighting pipeline.
 
 ## EditorState
 
-`EditorState` (in `Mked.Domain`) is the single mutable entity for an active editing session. It
+`EditorState` (in `Mked.Controls`) is the single mutable entity for an active editing session. It
 owns:
 
 - **Buffer** — the raw `string` content of the document.
@@ -93,7 +93,7 @@ methods fire `OnCursorMoved` — preventing unnecessary Markdig re-parses on cur
 
 ## BufferOperations
 
-`BufferOperations` (in `Mked.Domain`) is a static class of pure functions. It treats the buffer
+`BufferOperations` (in `Mked.Controls`) is a static class of pure functions. It treats the buffer
 as a newline-delimited string and never modifies state.
 
 | Method | Signature | Description |
@@ -110,7 +110,7 @@ string index required by `string.Substring` / slice operations.
 
 ## CursorNavigation
 
-`CursorNavigation` (in `Mked.Domain`) is a static class of pure cursor-movement functions. Each
+`CursorNavigation` (in `Mked.Controls`) is a static class of pure cursor-movement functions. Each
 function takes `(string buffer, CursorPosition current)` and returns the new `CursorPosition`
 without mutating anything.
 
@@ -182,7 +182,7 @@ buffer changes (cursor-only redraws reuse the cached spans).
 ### Translating to Spectre.Console
 
 `IHighlightLayer` operates in Domain-layer types (`TextRange`, `HighlightKind`). Before passing
-spans to `MarkdownEditorWidget` in `Mked.Controls`, the `HighlightMapper` class (in `Mked.Console`)
+spans to `MarkdownEditorWidget` in `Mked.Controls`, the `HighlightMapper` class (in `Mked.Controls`)
 converts them to `StyledSpan` values (character offsets + Spectre.Console `Style`):
 
 ```
