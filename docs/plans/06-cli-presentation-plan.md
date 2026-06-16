@@ -21,7 +21,7 @@ warnings are cheapest to fix immediately after the code that caused them.
 
 ## Task List
 
-- [ ] **Task 1: DI composition root**
+- [x] **Task 1: DI composition root**
   Add `Microsoft.Extensions.DependencyInjection` to `Mked.Console.csproj`. Implement
   `TypeRegistrar` and `TypeResolver` per the design contract. Update `Program.cs` to build
   `ServiceCollection`, register all ports → adapters and use cases, and pass a
@@ -30,7 +30,7 @@ warnings are cheapest to fix immediately after the code that caused them.
   FileSystemReader())` field initializers). Done when `dotnet build` is clean and both
   commands still function identically to before.
 
-- [ ] **Task 2: `ExitCode` constants and `MkedError.IoError` enrichment**
+- [x] **Task 2: `ExitCode` constants and `MkedError.IoError` enrichment**
   Add `ExitCode` static class with `Success`, `Usage`, `Io`, `Parse` constants. Add the
   `IoKind` top-level enum (`ReadNotFound`, `ReadAccessDenied`, `ReadGeneric`,
   `WriteAccessDenied`, `WriteGeneric`) in `Mked.Domain`; add a `Kind` property to
@@ -40,7 +40,7 @@ warnings are cheapest to fix immediately after the code that caused them.
   in tests to include the new property (all existing tests must remain green).
   Depends on: Task 1
 
-- [ ] **Task 3: `ErrorPresenter` — centralized error rendering**
+- [x] **Task 3: `ErrorPresenter` — centralized error rendering**
   Implement `ErrorPresenter.Show(MkedError) : int` per the design contract (styled Spectre
   `Panel`, red header, returns the `ExitCode`). Replace all three inline error-rendering
   sites in `ViewCommand` (lines 22, 38, 161) and all two in `EditCommand` (lines 32, 241,
@@ -49,7 +49,7 @@ warnings are cheapest to fix immediately after the code that caused them.
   when every error path prints a consistent panel and no `FormatError` private methods remain.
   Depends on: Task 2
 
-- [ ] **Task 4: `--plain` repurposing and `PlainTextRenderer`**
+- [x] **Task 4: `--plain` repurposing and `PlainTextRenderer`**
   Rename `ViewSettings.PlainLinks` → `Plain`; update the XML doc and `[Description]`
   attribute to reflect "plain-text output mode, no pager". Remove `PlainLinks` from
   `BuildViewer` / `RenderContext` call sites in `ViewCommand`. Implement `RendererSelector`
@@ -60,7 +60,7 @@ warnings are cheapest to fix immediately after the code that caused them.
   both write the raw Markdown source to stdout with no ANSI codes.
   Depends on: Task 1
 
-- [ ] **Task 5: stdin auto-detect**
+- [x] **Task 5: stdin auto-detect**
   Update `ViewCommand.ExecuteAsync` dispatch order: when `settings.Path is null` and
   `Console.IsInputRedirected` is `true`, route to the stdin/stream path (same
   `RunStreamModeAsync`) rather than returning a usage error. The `--stream` flag continues
@@ -69,7 +69,7 @@ warnings are cheapest to fix immediately after the code that caused them.
   `mked view` with no pipe and no path prints the usage error and returns exit code 1.
   Depends on: Task 1
 
-- [ ] **Task 6: `TerminalLifecycle` — signal handling and cursor restore**
+- [x] **Task 6: `TerminalLifecycle` — signal handling and cursor restore**
   Implement `TerminalLifecycle` per the design contract (`CancelKeyPress` + SIGTERM via
   `PosixSignalRegistration`; `Dispose` unregisters both and restores
   `Console.CursorVisible = true`). Wrap the interactive entry in both `ViewCommand` and
@@ -79,7 +79,7 @@ warnings are cheapest to fix immediately after the code that caused them.
   pressing Ctrl+C during a `SelectionPrompt` both exit cleanly with cursor restored.
   Depends on: Task 1
 
-- [ ] **Task 7: `Mked.Console.Tests` project**
+- [x] **Task 7: `Mked.Console.Tests` project**
   Create the `Mked.Console.Tests` xUnit project; add it to the solution. Add
   `PackageReference`s for xUnit, AwesomeAssertions, and Spectre.Console.Testing
   (`CommandAppTester`). Write unit tests: `ErrorPresenter_Tests` (each `MkedError` variant
@@ -92,7 +92,7 @@ warnings are cheapest to fix immediately after the code that caused them.
   `Mked.Infrastructure`. Done when `dotnet test` is green across all projects.
   Depends on: Task 3, Task 4, Task 5, Task 6
 
-- [ ] **Task 8: AOT publish verification**
+- [x] **Task 8: AOT publish verification**
   Run `dotnet publish src/Mked.Console/Mked.Console.csproj -r win-x64 --self-contained
   -p:PublishAot=true -c Release` and resolve any ILLink or AOT warnings introduced by this
   epic (MS.DI registration, `TerminalLifecycle` signal APIs, `PlainTextRenderer`'s
