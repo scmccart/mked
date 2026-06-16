@@ -63,7 +63,7 @@ settings binding). Publish must be smoke-tested with `-p:PublishAot=true`.
 
 | Type | Kind | Purpose |
 |------|------|---------|
-| `MkedError.IoError.IoKind` | nested enum | Differentiates `ReadNotFound`, `ReadAccessDenied`, `WriteAccessDenied`, `WriteGeneric` within a single `IoError` |
+| `IoKind` | top-level enum | Differentiates `ReadNotFound`, `ReadAccessDenied`, `ReadGeneric`, `WriteAccessDenied`, `WriteGeneric` within a single `IoError` |
 
 ### New Types — `Mked.Console`
 
@@ -396,7 +396,7 @@ The existing polled-keystroke Ctrl+C handling inside the `AnsiConsole.Live` loop
 ## Error Handling Strategy
 
 - **New `MkedError` variant**: none. Enrichment is additive: `MkedError.IoError` gains a
-  nested `IoKind` enum with four values; no new top-level DU case is introduced.
+  top-level `IoKind` enum with five values; no new top-level DU case is introduced.
 - **Error production boundaries**: `FileSystemReader`/`FileSystemWriter` produce enriched
   `IoError`; `StreamInputUseCase` produces `StreamError`; all other error production sites
   (parse errors) remain unchanged.

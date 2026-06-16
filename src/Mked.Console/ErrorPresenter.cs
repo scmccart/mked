@@ -30,6 +30,8 @@ public static class ErrorPresenter
                 ("Permission denied", $"Cannot write: {e.Path}", ExitCode.Io),
             MkedError.IoError { Kind: IoKind.WriteGeneric } e =>
                 ("Write error", $"{e.Path}: {e.Reason}", ExitCode.Io),
+            MkedError.IoError { Kind: IoKind.ReadGeneric } e =>
+                ("Read error", $"{e.Path}: {e.Reason}", ExitCode.Io),
             MkedError.ParseError e =>
                 ("Parse error", $"Line {e.Line}, column {e.Column}: {e.Message}", ExitCode.Parse),
             MkedError.ValidationError e =>

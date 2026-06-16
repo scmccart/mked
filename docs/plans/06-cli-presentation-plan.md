@@ -32,8 +32,9 @@ warnings are cheapest to fix immediately after the code that caused them.
 
 - [ ] **Task 2: `ExitCode` constants and `MkedError.IoError` enrichment**
   Add `ExitCode` static class with `Success`, `Usage`, `Io`, `Parse` constants. Add the
-  `IoKind` nested enum (`ReadNotFound`, `ReadAccessDenied`, `WriteAccessDenied`,
-  `WriteGeneric`) to `MkedError.IoError`; update its constructor/record definition.
+  `IoKind` top-level enum (`ReadNotFound`, `ReadAccessDenied`, `ReadGeneric`,
+  `WriteAccessDenied`, `WriteGeneric`) in `Mked.Domain`; add a `Kind` property to
+  `MkedError.IoError`.
   Update `FileSystemReader` and `FileSystemWriter` to produce the appropriate `IoKind`
   values in their exception handlers. Update all existing pattern-match exhaustion sites
   in tests to include the new property (all existing tests must remain green).

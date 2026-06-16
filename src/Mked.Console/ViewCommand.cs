@@ -21,7 +21,7 @@ public sealed class ViewCommand(OpenFileUseCase openFile, StreamInputUseCase str
         if (useStdin)
         {
             if (RendererSelector.IsPlainMode(settings))
-                return await RunPlainStreamModeAsync(settings);
+                return await RunPlainStreamModeAsync(settings, cancellationToken);
             return await RunStreamModeAsync(settings);
         }
 
@@ -52,10 +52,10 @@ public sealed class ViewCommand(OpenFileUseCase openFile, StreamInputUseCase str
         return ExitCode.Success;
     }
 
-    private async Task<int> RunPlainStreamModeAsync(ViewSettings settings)
+    private async Task<int> RunPlainStreamModeAsync(ViewSettings settings, CancellationToken cancellationToken)
     {
-        var docStream = _streamInput.ExecuteAsync();
-        await foreach (var chunk in docStream)
+        var docStream = _streamInput.ExecuteAsync(cancellationToken);
+        await foreach (var chunk in docStream.WithCancellation(cancellationToken))
         {
             if (chunk is Result<StreamedDocument, MkedError>.Ok(var doc))
                 await PlainTextRenderer.RenderAsync(doc.Source, settings.ShowFrontmatter, System.Console.Out);

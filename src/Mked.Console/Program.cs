@@ -26,6 +26,13 @@ var app = new CommandApp(registrar);
 app.Configure(config =>
 {
     config.SetApplicationName("mked");
+    config.SetExceptionHandler((ex, _) =>
+    {
+        AnsiConsole.Write(new Panel(Markup.Escape(ex.Message))
+            .Header("[red bold] Error [/]")
+            .BorderColor(Color.Red));
+        return ExitCode.Usage;
+    });
     config.AddCommand<ViewCommand>("view")
           .WithDescription("View a Markdown file in a scrollable pager.");
     config.AddCommand<EditCommand>("edit")

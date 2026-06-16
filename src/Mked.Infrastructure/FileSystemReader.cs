@@ -35,7 +35,7 @@ public sealed class FileSystemReader : IFileReader
         }
         catch (IOException ex)
         {
-            return Result.Err<string, MkedError>(new MkedError.IoError(path, ex.Message, IoKind.ReadNotFound));
+            return Result.Err<string, MkedError>(new MkedError.IoError(path, ex.Message, IoKind.ReadGeneric));
         }
     }
 }

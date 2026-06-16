@@ -31,6 +31,13 @@ public sealed class ErrorPresenter_Tests
     }
 
     [Fact]
+    public void IoError_ReadGeneric_ReturnsExitCodeIo()
+    {
+        var error = new MkedError.IoError("/data.md", "Sharing violation", IoKind.ReadGeneric);
+        ErrorPresenter.Show(error).Should().Be(ExitCode.Io);
+    }
+
+    [Fact]
     public void ParseError_ReturnsExitCodeParse()
     {
         var error = new MkedError.ParseError(3, 7, "unexpected token");
