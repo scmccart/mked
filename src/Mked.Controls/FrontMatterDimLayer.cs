@@ -3,7 +3,7 @@ using Markdig.Extensions.Yaml;
 namespace Mked.Controls;
 
 /// <summary>Annotates the YAML front-matter block when one is present.</summary>
-public sealed class FrontMatterDimLayer : IHighlightLayer
+internal sealed class FrontMatterDimLayer : IHighlightLayer
 {
     /// <inheritdoc/>
     public IEnumerable<HighlightSpan> Annotate(string source, MarkdownDocument document)

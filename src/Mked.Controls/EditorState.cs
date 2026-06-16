@@ -4,7 +4,7 @@ namespace Mked.Controls;
 /// Mutable entity representing an active editing session. Stores the current buffer,
 /// cursor position, dirty flag, and a command-object undo stack.
 /// </summary>
-public sealed class EditorState
+internal sealed class EditorState
 {
     private interface IEditorCommand
     {

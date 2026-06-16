@@ -4,7 +4,7 @@ namespace Mked.Controls;
 /// A single syntax-highlighting pass over a parsed Markdown document.
 /// Implementations are stateless and may be called on any thread.
 /// </summary>
-public interface IHighlightLayer
+internal interface IHighlightLayer
 {
     /// <summary>
     /// Returns all <see cref="HighlightSpan"/> values produced by this layer for

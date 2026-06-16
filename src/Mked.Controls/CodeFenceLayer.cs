@@ -1,7 +1,7 @@
 namespace Mked.Controls;
 
 /// <summary>Annotates fenced code blocks.</summary>
-public sealed class CodeFenceLayer : IHighlightLayer
+internal sealed class CodeFenceLayer : IHighlightLayer
 {
     /// <inheritdoc/>
     public IEnumerable<HighlightSpan> Annotate(string source, MarkdownDocument document)

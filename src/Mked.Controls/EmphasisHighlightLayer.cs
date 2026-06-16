@@ -3,7 +3,7 @@ using Markdig.Syntax.Inlines;
 namespace Mked.Controls;
 
 /// <summary>Annotates bold and italic emphasis spans.</summary>
-public sealed class EmphasisHighlightLayer : IHighlightLayer
+internal sealed class EmphasisHighlightLayer : IHighlightLayer
 {
     /// <inheritdoc/>
     public IEnumerable<HighlightSpan> Annotate(string source, MarkdownDocument document)

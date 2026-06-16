@@ -1,7 +1,7 @@
 namespace Mked.Controls;
 
 /// <summary>Annotates ATX heading markers and heading text.</summary>
-public sealed class HeadingHighlightLayer : IHighlightLayer
+internal sealed class HeadingHighlightLayer : IHighlightLayer
 {
     /// <inheritdoc/>
     public IEnumerable<HighlightSpan> Annotate(string source, MarkdownDocument document)

@@ -1,0 +1,44 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  release:
+    name: Pack and publish to GitHub Packages
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout (full history for MinVer)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore
+        run: dotnet restore mked.slnx
+
+      - name: Build
+        run: dotnet build mked.slnx -c Release --no-restore
+
+      - name: Test
+        run: dotnet test mked.slnx -c Release --no-build
+
+      - name: Pack Mked.Controls
+        run: dotnet pack src/Mked.Controls/Mked.Controls.csproj -c Release --no-build -o ./artifacts
+
+      - name: Push to GitHub Packages
+        run: |
+          dotnet nuget push ./artifacts/*.nupkg \
+            --source https://nuget.pkg.github.com/scmccart/index.json \
+            --api-key ${{ secrets.GITHUB_TOKEN }}

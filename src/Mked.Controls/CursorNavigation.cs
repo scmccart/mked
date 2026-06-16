@@ -1,7 +1,7 @@
 namespace Mked.Controls;
 
 /// <summary>Stateless cursor movement operations over a newline-delimited text buffer.</summary>
-public static class CursorNavigation
+internal static class CursorNavigation
 {
     /// <summary>
     /// Moves the cursor one character to the left. If already at column 1, wraps to the

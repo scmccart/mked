@@ -8,12 +8,19 @@
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <AnalysisMode>Recommended</AnalysisMode>
-    <GenerateDocumentationFile >true</GenerateDocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition="'$(IsTestProject)' != 'true'">
     <!-- src projects -->
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <NoWarn>$(NoWarn);CA1715</NoWarn>
+    <!-- NuGet package metadata (shared across all packable projects) -->
+    <Authors>Sean McCarthy</Authors>
+    <Company>Sean McCarthy</Company>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/scmccart/mked</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageProjectUrl>https://github.com/scmccart/mked</PackageProjectUrl>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
   </PropertyGroup>
   <PropertyGroup Condition="'$(IsTestProject)' == 'true'">
     <!-- test projects -->

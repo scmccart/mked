@@ -3,7 +3,7 @@ using Markdig.Syntax.Inlines;
 namespace Mked.Controls;
 
 /// <summary>Annotates link text and URL spans.</summary>
-public sealed class LinkHighlightLayer : IHighlightLayer
+internal sealed class LinkHighlightLayer : IHighlightLayer
 {
     /// <inheritdoc/>
     public IEnumerable<HighlightSpan> Annotate(string source, MarkdownDocument document)

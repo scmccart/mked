@@ -1,4 +1,26 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>Mked.Controls</PackageId>
+    <IsPackable>true</IsPackable>
+    <Description>Spectre.Console widgets for viewing and editing Markdown in the terminal. Embed MarkdownViewer and MarkdownEditor in any Spectre.Console application.</Description>
+    <PackageTags>markdown;spectre-console;terminal;tui;editor;viewer;console;cli</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="MinVer" PrivateAssets="all" />
+  </ItemGroup>
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>Mked.Controls.Tests</_Parameter1>
+    </AssemblyAttribute>
+    <!-- Castle DynamicProxy (used by Moq) also needs internal access to mock internal interfaces -->
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>DynamicProxyGenAssembly2</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Markdig" />
     <PackageReference Include="Spectre.Console" />
