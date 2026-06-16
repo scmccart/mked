@@ -25,7 +25,7 @@ mked view <path> [options]
 | `-f`, `--follow` | Re-read and redisplay the file each time it changes on disk. |
 | `-s`, `--stream` | Read Markdown from stdin and update the viewer as data arrives. |
 | `--show-frontmatter` | Display the YAML front matter block above the document body. |
-| `-p`, `--plain` | Render link text only, omitting URLs. |
+| `-p`, `--plain` | Render in plain text |
 
 **Keyboard navigation**
 
@@ -53,7 +53,7 @@ mked view README.md --follow
 # Pipe output from another command into the viewer
 curl -s https://raw.githubusercontent.com/.../README.md | mked view --stream
 
-# Hide URLs when reading documentation
+# Render in plain text
 mked view docs/guide.md --plain
 ```
 
@@ -83,6 +83,7 @@ Omit `path` to start with a blank document.
 | `Enter` | Insert new line |
 | `Backspace` | Delete character before cursor |
 | `Delete` | Delete character after cursor |
+| `Tab` | Insert a two-space indent |
 | `←` `→` `↑` `↓` | Move cursor |
 | `Ctrl+←` / `Ctrl+→` | Move cursor one word left / right |
 | `Home` | Move to start of line |
@@ -94,6 +95,17 @@ Omit `path` to start with a blank document.
 | `Ctrl+N` | New empty document |
 | `Ctrl+P` | Toggle the live preview pane |
 | `Ctrl+Q` | Quit (prompts to save if there are unsaved changes) |
+| `Shift+Tab` | Move focus between the editor and the preview pane (split mode) |
+
+**When the preview pane is focused** (switch focus with `Shift+Tab`; split mode only)
+
+| Key | Action |
+|-----|--------|
+| `↑` / `↓` | Scroll preview one line |
+| `PageUp` / `PageDown` | Scroll preview half a viewport |
+| `Home` | Jump to top |
+| `End` | Jump to bottom |
+| `Shift+Tab` | Move focus between the editor and the preview pane (split mode) |
 
 **Examples**
 
