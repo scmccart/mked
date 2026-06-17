@@ -119,3 +119,64 @@ mked edit
 # Open with the preview pane visible from the start
 mked edit notes.md --split
 ```
+
+---
+
+## Mked.Controls — embed Markdown in your own app
+
+`Mked.Controls` is the library behind both commands, published as a standalone NuGet package.
+Use it to add a Markdown pager (`MarkdownViewer`) or an interactive editor (`MarkdownEditor`) to
+any [Spectre.Console](https://spectreconsole.net/) application.
+
+### Install
+
+`Mked.Controls` is on the GitHub Packages NuGet feed. Because its dependencies (Markdig,
+Spectre.Console) come from nuget.org, add a `nuget.config` at your solution root that includes
+both sources:
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<configuration>
+  <packageSources>
+    <add key="nuget.org" value="https://api.nuget.org/v3/index.json" protocolVersion="3" />
+    <add key="mked-github" value="https://nuget.pkg.github.com/scmccart/index.json" protocolVersion="3" />
+  </packageSources>
+</configuration>
+```
+
+Then add the package:
+
+```sh
+dotnet add package Mked.Controls
+```
+
+> **Authentication:** GitHub Packages requires a Personal Access Token (PAT) with `read:packages`
+> scope. See [GitHub Docs — Authenticating to GitHub Packages](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-nuget-registry#authenticating-to-github-packages).
+
+### Quick start
+
+```csharp
+// Viewer
+var viewer = new MarkdownViewer(File.ReadAllText("notes.md")) { ViewportHeight = 30 };
+AnsiConsole.Write(viewer);
+
+// Editor (host-driven — you own the input loop)
+var editor = new MarkdownEditor(initialBuffer: existingText);
+editor.BufferChanged += text => UpdatePreview(text);
+editor.HasFocus = true;
+
+await AnsiConsole.Live(editor).StartAsync(async ctx =>
+{
+    ctx.Refresh();
+    while (true)
+    {
+        var key = Console.ReadKey(intercept: true);
+        if (key.Key == ConsoleKey.Escape) break;
+        editor.HandleKey(key);
+        ctx.Refresh();
+    }
+});
+string result = editor.Buffer;
+```
+
+Full API reference: [`docs/reference/controls-public-api.md`](docs/reference/controls-public-api.md)

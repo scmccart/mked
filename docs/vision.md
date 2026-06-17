@@ -25,7 +25,7 @@ Key motivations:
 
 | Artefact | Channel |
 |---|---|
-| `Mked.Controls` NuGet library | nuget.org |
+| `Mked.Controls` NuGet library | GitHub Packages (nuget.org planned — Epic 9) |
 | `mked` dotnet tool | nuget.org (`dotnet tool install -g mked`) |
 | Self-contained single-file executable | GitHub Releases |
 | WinGet package | WinGet (planned) |

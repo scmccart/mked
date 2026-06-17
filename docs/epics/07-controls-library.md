@@ -29,7 +29,7 @@ Expose `MarkdownEditor` as a first-class, documented public API using a host-dri
 Publish `Mked.Controls` to the GitHub Packages feed (`nuget.pkg.github.com/scmccart`) with
 complete package metadata. Publishing to nuget.org is deferred to Epic 9 (v1 readiness).
 
-- As a library consumer, I can add the package from the GitHub Packages feed with `dotnet add package Mked.Controls --source https://nuget.pkg.github.com/scmccart/index.json`
+- As a library consumer, I can add the package from the GitHub Packages feed by adding a `nuget.config` that includes both `https://nuget.pkg.github.com/scmccart/index.json` and `https://api.nuget.org/v3/index.json`, then running `dotnet add package Mked.Controls` (using `--source` alone breaks transitive dependency resolution for Markdig and Spectre.Console)
 - As a library consumer, the package page shows a description, tags, license (MIT), and a link to the repository
 - As a developer, the package is pushed to the GitHub Packages feed automatically by the GitHub Actions release workflow (`.github/workflows/release.yml`) on a `v*` version tag
 - As a developer, the package includes a `README.md` surfaced on the package page

@@ -2,7 +2,7 @@
 
 > **Epic**: [`docs/epics/07-controls-library.md`](../epics/07-controls-library.md)
 > **Design**: [`docs/designs/07-controls-library-design.md`](../designs/07-controls-library-design.md)
-> **Status**: Draft
+> **Status**: Complete
 
 ---
 
