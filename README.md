@@ -4,7 +4,43 @@ A terminal-native Markdown viewer and editor.
 
 ## Installation
 
+### Option 1 — Native binary (no .NET required)
+
+Download a self-contained, NativeAOT-compiled binary for your platform from the
+[latest GitHub Release](https://github.com/scmccart/mked/releases/latest):
+
+| Platform | File |
+|---|---|
+| Windows x64 | `mked-win-x64.exe` |
+| Linux x64 | `mked-linux-x64` |
+| Linux arm64 | `mked-linux-arm64` |
+| macOS Apple Silicon | `mked-osx-arm64` |
+| macOS Intel | `mked-osx-x64` |
+
+On Linux and macOS, mark the binary executable after downloading:
+
+```sh
+chmod +x mked-linux-x64   # replace with your platform's filename
 ```
+
+Each release also includes a `<filename>.sha256` file for checksum verification.
+
+### Option 2 — dotnet tool (GitHub Packages)
+
+> **Note:** Until mked is published to nuget.org, you need to add the GitHub Packages source first.
+
+```sh
+dotnet nuget add source https://nuget.pkg.github.com/scmccart/index.json \
+  --name scmccart-github \
+  --username scmccart \
+  --password <PAT with read:packages>
+
+dotnet tool install -g mked
+```
+
+Once mked is on nuget.org (Epic 9), installation will simplify to:
+
+```sh
 dotnet tool install -g mked
 ```
 

@@ -2,7 +2,7 @@
 
 > **Epic**: [`docs/epics/08-distribution-aot.md`](../../docs/epics/08-distribution-aot.md)
 > **Design**: [`docs/designs/08-distribution-aot-design.md`](../../docs/designs/08-distribution-aot-design.md)
-> **Status**: Draft
+> **Status**: Complete
 
 ---
 
@@ -20,7 +20,7 @@ documentation and WinGet scaffolding that caps the epic.
 
 ## Task List
 
-- [ ] **Task 1: dotnet tool packaging config**
+- [x] **Task 1: dotnet tool packaging config**
   Refactor `src/Mked.Console/Mked.Console.csproj`: remove `PublishAot`, `PublishSingleFile`,
   and `SelfContained` from the unconditional `<PropertyGroup>` (they move into `.pubxml` profiles
   in Task 2) so `dotnet pack` produces a clean framework-dependent IL assembly. Add `PackAsTool`,
@@ -30,7 +30,7 @@ documentation and WinGet scaffolding that caps the epic.
   AOT errors, and `dotnet tool install --global --add-source ./artifacts mked && mked --help`
   succeeds.
 
-- [ ] **Task 2: NativeAOT publish profiles (per RID)**
+- [x] **Task 2: NativeAOT publish profiles (per RID)**
   Create `src/Mked.Console/Properties/PublishProfiles/` and add five `.pubxml` files —
   `win-x64.pubxml`, `linux-x64.pubxml`, `linux-arm64.pubxml`, `osx-arm64.pubxml`,
   `osx-x64.pubxml`. Each profile sets `RuntimeIdentifier`, `PublishAot=true`,
@@ -40,7 +40,7 @@ documentation and WinGet scaffolding that caps the epic.
   binary that runs `mked view --plain` with no installed .NET runtime.
   Depends on: Task 1
 
-- [ ] **Task 3: Trim safety audit**
+- [x] **Task 3: Trim safety audit**
   Run `dotnet publish` with each locally buildable RID and confirm zero IL warnings. Review the
   existing `NoWarn=IL2026;IL2104;IL3000;IL3050` in `Mked.Console.csproj` — trim to only the
   warnings still emitted by Spectre, and add an inline comment for each retained suppression
@@ -51,7 +51,7 @@ documentation and WinGet scaffolding that caps the epic.
   checklist state. Done when a clean `dotnet publish` produces zero warnings and the doc is current.
   Depends on: Task 2
 
-- [ ] **Task 4: Release workflow — matrix AOT build + GitHub Release**
+- [x] **Task 4: Release workflow — matrix AOT build + GitHub Release**
   Expand `.github/workflows/release.yml` with a `build` matrix job covering the five
   (runner, RID) pairs: `windows-latest`/`win-x64`, `ubuntu-latest`/`linux-x64`,
   `ubuntu-24.04-arm`/`linux-arm64`, `macos-latest`/`osx-arm64`, `macos-13`/`osx-x64`. Each job
@@ -63,7 +63,7 @@ documentation and WinGet scaffolding that caps the epic.
   platform binaries and checksum files attached.
   Depends on: Task 2
 
-- [ ] **Task 5: Release workflow — package push (Controls + tool)**
+- [x] **Task 5: Release workflow — package push (Controls + tool)**
   Extend `release.yml` with a `publish` job (`needs: release`) that checks out the repo, sets up
   .NET 10, packs both `src/Mked.Console/Mked.Console.csproj` and
   `src/Mked.Controls/Mked.Controls.csproj` into `./artifacts`, then pushes all `.nupkg` files to
@@ -73,7 +73,7 @@ documentation and WinGet scaffolding that caps the epic.
   NuGet packages to GitHub Packages.
   Depends on: Task 1, Task 4
 
-- [ ] **Task 6: CI smoke test**
+- [x] **Task 6: CI smoke test**
   Add a `smoke` job (`needs: publish`) to `release.yml`. The job checks out the repo, sets up
   .NET 10, downloads the `packages` artifact, installs the tool with
   `dotnet tool install --global --add-source ./artifacts mked`, then runs
@@ -83,7 +83,7 @@ documentation and WinGet scaffolding that caps the epic.
   to fail.
   Depends on: Task 5
 
-- [ ] **Task 7: WinGet manifest scaffold + release docs**
+- [x] **Task 7: WinGet manifest scaffold + release docs**
   Create `manifests/s/scmccart/mked/0.0.0/` with three placeholder YAML files following WinGet
   schema 1.6.0: `scmccart.mked.yaml` (version manifest), `scmccart.mked.installer.yaml`
   (win-x64 installer entry referencing the GitHub Release binary URL and sha256 checksum — use

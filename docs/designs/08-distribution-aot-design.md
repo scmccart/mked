@@ -1,7 +1,7 @@
 # Epic 08 — Distribution & AOT: Technical Design
 
 > **Epic**: [`docs/epics/08-distribution-aot.md`](../../docs/epics/08-distribution-aot.md)
-> **Status**: Draft
+> **Status**: Implemented
 > **Date**: 2026-06-18
 
 ---

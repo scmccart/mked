@@ -5,6 +5,12 @@
 ```
 mked/
 ├── mked.slnx
+├── manifests/
+│   └── s/scmccart/mked/
+│       └── 0.0.0/                        ← WinGet manifest templates (copy per release)
+│           ├── scmccart.mked.yaml
+│           ├── scmccart.mked.installer.yaml
+│           └── scmccart.mked.locale.en-US.yaml
 ├── src/
 │   ├── Mked.Domain/
 │   │   └── Mked.Domain.csproj
@@ -15,8 +21,17 @@ mked/
 │   ├── Mked.Controls/
 │   │   └── Mked.Controls.csproj
 │   └── Mked.Console/
-│       └── Mked.Console.csproj
+│       ├── Mked.Console.csproj
+│       └── Properties/
+│           └── PublishProfiles/          ← per-RID NativeAOT .pubxml profiles
+│               ├── win-x64.pubxml
+│               ├── linux-x64.pubxml
+│               ├── linux-arm64.pubxml
+│               ├── osx-arm64.pubxml
+│               └── osx-x64.pubxml
 └── tests/
+    ├── fixtures/
+    │   └── smoke-fixture.md              ← input file for CI smoke test
     ├── Mked.Domain.Tests/
     │   └── Mked.Domain.Tests.csproj
     ├── Mked.Application.Tests/
