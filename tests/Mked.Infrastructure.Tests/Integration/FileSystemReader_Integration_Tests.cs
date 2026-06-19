@@ -88,6 +88,7 @@ public sealed class FileSystemReader_ReadAsync_Tests : IDisposable
         MkedError error = ((Result<string, MkedError>.Err)result).Error;
         MkedError.IoError ioError = error.Should().BeOfType<MkedError.IoError>().Subject;
         ioError.Path.Should().Be(path);
+        ioError.Kind.Should().Be(IoKind.ReadNotFound);
     }
 
     [Fact(Skip = "Requires non-admin process")]

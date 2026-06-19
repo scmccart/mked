@@ -108,6 +108,16 @@ public class EditorState_Observer_Tests
     }
 
     [Fact]
+    public void Subscribe_NullObserver_ThrowsArgumentNullException()
+    {
+        var state = new EditorState("hello");
+
+        Action act = () => state.Subscribe(null!);
+
+        act.Should().Throw<ArgumentNullException>();
+    }
+
+    [Fact]
     public void Redo_CursorCommand_NotifiesOnlyOnCursorMoved()
     {
         var state = new EditorState("line1\nline2");
