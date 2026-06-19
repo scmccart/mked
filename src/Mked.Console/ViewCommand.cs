@@ -252,7 +252,18 @@ public sealed class ViewCommand(OpenFileUseCase openFile, StreamInputUseCase str
                         var reloaded = await _openFile.ExecuteAsync(settings.Path!);
                         if (reloaded is Result<OpenedFile, MkedError>.Ok(var newFile))
                         {
-                            baseViewer = BuildViewer(newFile.Source, settings);
+                            var newViewer = BuildViewer(newFile.Source, settings);
+                            // Populate the render cache so LineHashes are available for
+                            // anchor remapping before the new viewer is displayed.
+                            newViewer.Measure(
+                                RenderOptions.Create(AnsiConsole.Console),
+                                AnsiConsole.Profile.Width);
+                            currentLine = ScrollAnchor.RemapTopLine(
+                                viewer.ScrollInfo.LineHashes,
+                                newViewer.ScrollInfo.LineHashes,
+                                currentLine,
+                                h);
+                            baseViewer = newViewer;
                             dirty = true;
                         }
                     }

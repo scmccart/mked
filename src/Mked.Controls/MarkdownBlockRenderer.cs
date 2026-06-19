@@ -35,7 +35,34 @@ internal sealed class MarkdownBlockRenderer
             allLines.AddRange(RenderBlock(block, options, maxWidth));
         }
 
-        return (allLines, new MarkdownViewerScrollInfo(allLines.Count, blockStartLines.AsReadOnly()));
+        var lineHashes = new int[allLines.Count];
+        for (int i = 0; i < allLines.Count; i++)
+            lineHashes[i] = LineContentHash(allLines[i]);
+
+        return (allLines, new MarkdownViewerScrollInfo(allLines.Count, blockStartLines.AsReadOnly())
+        {
+            LineHashes = Array.AsReadOnly(lineHashes),
+        });
+    }
+
+    /// <summary>
+    /// Returns a content hash for a single rendered terminal line.
+    /// Returns <c>0</c> for blank lines (empty or whitespace only); non-blank lines never
+    /// produce <c>0</c> so callers can use <c>0</c> as a reliable blank-line sentinel.
+    /// </summary>
+    private static int LineContentHash(List<Segment> line)
+    {
+        if (line.Count == 0) return 0;
+
+        var sb = new System.Text.StringBuilder();
+        foreach (var seg in line)
+            sb.Append(seg.Text);
+
+        string text = sb.ToString().Trim();
+        if (text.Length == 0) return 0;
+
+        int hash = text.GetHashCode();
+        return hash == 0 ? 1 : hash;   // reserve 0 for blank lines
     }
 
     private List<List<Segment>> RenderBlock(

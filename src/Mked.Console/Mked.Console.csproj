@@ -17,16 +17,19 @@
   <ItemGroup>
     <PackageReference Include="MinVer" PrivateAssets="all" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="Markdig" />
     <PackageReference Include="Spectre.Console" />
     <PackageReference Include="Spectre.Console.Cli" />
     <ProjectReference Include="..\Mked.Application\Mked.Application.csproj" />
     <ProjectReference Include="..\Mked.Infrastructure\Mked.Infrastructure.csproj" />
     <ProjectReference Include="..\Mked.Controls\Mked.Controls.csproj" />
+    <Using Include="Markdig" />
     <Using Include="Mked.Application" />
     <Using Include="Mked.Controls" />
     <Using Include="Mked.Domain" />
     <Using Include="Mked.Infrastructure" />
     <Using Include="Spectre.Console" />
     <Using Include="Spectre.Console.Cli" />
+    <Using Include="Spectre.Console.Rendering" />
   </ItemGroup>
 </Project>
