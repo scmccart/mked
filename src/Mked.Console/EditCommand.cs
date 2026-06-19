@@ -77,6 +77,7 @@ public sealed class EditCommand(OpenFileUseCase openFile, SaveFileUseCase saveFi
 
                 try
                 {
+                    using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(16));
                     while (!cts.Token.IsCancellationRequested)
                     {
                         bool dirty = false;
@@ -205,7 +206,7 @@ public sealed class EditCommand(OpenFileUseCase openFile, SaveFileUseCase saveFi
                             liveCtx.UpdateTarget(BuildLayout(editor, preview, session));
                         }
 
-                        await Task.Delay(16, cts.Token);
+                        await timer.WaitForNextTickAsync(cts.Token);
                     }
                 }
                 catch (OperationCanceledException) { }

@@ -276,8 +276,7 @@ internal sealed class MarkdownBlockRenderer
         foreach (var row in dataRows)
         {
             var cells = row.Cast<Markdig.Extensions.Tables.TableCell>()
-                .Select(c => (IRenderable)new Markup(GetCellMarkup(c)))
-                .ToArray();
+                .Select(c => (IRenderable)new Markup(GetCellMarkup(c)));
             spectreTable.AddRow(cells);
         }
 

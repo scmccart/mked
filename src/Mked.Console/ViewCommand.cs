@@ -89,6 +89,7 @@ public sealed class ViewCommand(OpenFileUseCase openFile, StreamInputUseCase str
 
             try
             {
+                using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(16));
                 while (!cts.Token.IsCancellationRequested)
                 {
                     bool dirty = false;
@@ -177,7 +178,7 @@ public sealed class ViewCommand(OpenFileUseCase openFile, StreamInputUseCase str
                         liveCtx.UpdateTarget(viewer);
                     }
 
-                    await Task.Delay(16, cts.Token);
+                    await timer.WaitForNextTickAsync(cts.Token);
                 }
             }
             catch (OperationCanceledException) { }
@@ -210,14 +211,26 @@ public sealed class ViewCommand(OpenFileUseCase openFile, StreamInputUseCase str
                 FullMode = System.Threading.Channels.BoundedChannelFullMode.DropWrite,
             });
 
+        Exception? watcherFault = null;
         _ = Task.Run(async () =>
         {
-            await foreach (var _ in watcher.WatchAsync(cts.Token))
+            try
             {
-                reloadChannel.Writer.TryWrite(true);
+                await foreach (var _ in watcher.WatchAsync(cts.Token))
+                {
+                    reloadChannel.Writer.TryWrite(true);
+                }
             }
-
-            reloadChannel.Writer.TryComplete();
+            catch (OperationCanceledException) { }
+            catch (Exception ex)
+            {
+                watcherFault = ex;
+                cts.Cancel();
+            }
+            finally
+            {
+                reloadChannel.Writer.TryComplete();
+            }
         }, cts.Token);
 
         await AnsiConsole.Live(viewer).StartAsync(async liveCtx =>
@@ -228,6 +241,7 @@ public sealed class ViewCommand(OpenFileUseCase openFile, StreamInputUseCase str
 
             try
             {
+                using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(16));
                 while (!cts.Token.IsCancellationRequested)
                 {
                     bool dirty = false;
@@ -327,11 +341,14 @@ public sealed class ViewCommand(OpenFileUseCase openFile, StreamInputUseCase str
                         liveCtx.UpdateTarget(viewer);
                     }
 
-                    await Task.Delay(16, cts.Token);
+                    await timer.WaitForNextTickAsync(cts.Token);
                 }
             }
             catch (OperationCanceledException) { }
         });
+
+        if (watcherFault is not null)
+            return ErrorPresenter.Show(new MkedError.StreamError(watcherFault.Message));
 
         return 0;
     }
@@ -378,6 +395,7 @@ public sealed class ViewCommand(OpenFileUseCase openFile, StreamInputUseCase str
 
             try
             {
+                using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(16));
                 while (!cts.Token.IsCancellationRequested)
                 {
                     bool dirty = false;
@@ -479,7 +497,7 @@ public sealed class ViewCommand(OpenFileUseCase openFile, StreamInputUseCase str
                     if (renderer.Errors.TryRead(out var err))
                         ErrorPresenter.Show(err);
 
-                    await Task.Delay(16, cts.Token);
+                    await timer.WaitForNextTickAsync(cts.Token);
                 }
             }
             catch (OperationCanceledException) { }
