@@ -97,20 +97,60 @@ Before adding any package:
 
 If a package is not trim-safe, prefer an alternative or confine its use to a thin adapter that can be isolated with `[UnconditionalSuppressMessage]` and a clear comment explaining why it is safe.
 
+## Current suppressions
+
+The IL linker and AOT compiler emit warnings when they detect patterns that _might_ strip code
+needed at runtime. When a warning comes from mked's own code it must be fixed — either by
+annotating the type with `[DynamicallyAccessedMembers]`, switching to a source-generated
+alternative (`[GeneratedRegex]`, `[JsonSerializable]`), or restructuring the code.
+
+When a warning comes from inside a third-party library that mked cannot modify, suppression is
+the correct response — provided we have verified (via `TrimmerRoots.xml` and manual publish
+testing) that the code path the warning refers to _is_ reachable at runtime and the types it
+needs _are_ preserved. `<NoWarn>` is the standard MSBuild mechanism for project-wide suppression
+of specific warning codes; `[UnconditionalSuppressMessage]` is used for targeted per-call-site
+suppression when the affected code is in mked itself.
+
+The following IL warnings are suppressed in `Mked.Console.csproj` via `<NoWarn>` because they
+originate inside Spectre.Console.Cli's own assemblies, not in mked's code:
+
+| Warning | Cause |
+|---------|-------|
+| `IL2026` | Spectre.Console.Cli methods call into code that requires unreferenced code for settings resolution |
+| `IL2104` | Assembly-level roll-up: Spectre.Console.Cli produces trim warnings internally |
+| `IL3000` | Spectre.Console.Cli accesses `Assembly.Location` at runtime |
+| `IL3050` | Spectre.Console.Cli calls members annotated with `[RequiresDynamicCode]` for the settings binder |
+
+In addition, `TypeRegistrar.cs` carries a targeted `[UnconditionalSuppressMessage("Trimming", "IL2067")]`
+on the `Register` method because `ITypeRegistrar.Register` (defined by Spectre) lacks the
+`[DynamicallyAccessedMembers]` annotation that our implementation satisfies structurally — the
+types registered are always one of our explicitly annotated command or settings types.
+
+The `TrimmerRoots.xml` linker descriptor forces the IL linker to preserve
+`ViewCommand`, `ViewSettings`, `EditCommand`, `EditSettings`, and `AsyncCommand<TSettings>` in
+full, because Spectre's `ConfiguredCommand.FromType<TCommand>()` walks the base-class generic
+argument chain via reflection at startup to discover `TSettings`.
+
+`Mked.Controls` declares `<IsTrimmable>true</IsTrimmable>` and `<IsAotCompatible>true</IsAotCompatible>`
+so the compiler verifies the library is trim-safe when consumed by the AOT executable.
+
 ## Testing the publish
 
-Run a NativeAOT publish and inspect the output for trim and AOT warnings:
+Use the committed publish profiles to produce a native binary and inspect the output for trim and AOT warnings:
 
 ```powershell
-dotnet publish src/Mked.Console/Mked.Console.csproj `
-  -r win-x64 `
-  --self-contained `
-  -p:PublishAot=true `
-  -c Release
+dotnet publish src/Mked.Console/Mked.Console.csproj -p:PublishProfile=win-x64
 ```
 
-Trim warnings appear inline during the build. Any `ILLink` or `AOT` warning must be resolved before merging.
+Replace `win-x64` with the RID matching your development machine
+(`linux-x64`, `linux-arm64`, `osx-arm64`, `osx-x64`). The binary lands in
+`src/Mked.Console/publish/<rid>/`. Trim warnings appear inline during the build.
+Any `ILLink` or `AOT` warning that is not in the suppression table above must be resolved before merging.
 
 ## CI enforcement
 
-The release workflow should set `<TreatWarningsAsErrors>true</TreatWarningsAsErrors>` in `Mked.Console.csproj` so trim and AOT warnings fail the build automatically.
+`<TreatWarningsAsErrors>true</TreatWarningsAsErrors>` is set globally in `Directory.Build.props`
+and applies to all projects including `Mked.Console`. The matrix AOT publish in the release
+workflow therefore fails the build automatically if any new trim or AOT warning appears.
+Suppressions in `Mked.Console.csproj` are intentional and documented above — do not add new ones
+without updating this table.

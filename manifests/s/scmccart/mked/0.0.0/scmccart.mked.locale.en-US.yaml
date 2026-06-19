@@ -1,0 +1,22 @@
+PackageIdentifier: scmccart.mked
+PackageVersion: 0.0.0
+PackageLocale: en-US
+Publisher: Sean McCarthy
+PublisherUrl: https://github.com/scmccart
+PublisherSupportUrl: https://github.com/scmccart/mked/issues
+PackageName: mked
+PackageUrl: https://github.com/scmccart/mked
+License: MIT
+LicenseUrl: https://github.com/scmccart/mked/blob/main/LICENSE
+ShortDescription: Terminal Markdown viewer and editor
+Description: >-
+  A .NET terminal tool for viewing and editing Markdown files directly in the console.
+  Self-contained NativeAOT binary — no .NET runtime required.
+Tags:
+  - markdown
+  - terminal
+  - cli
+  - viewer
+  - editor
+ManifestType: defaultLocale
+ManifestVersion: 1.6.0

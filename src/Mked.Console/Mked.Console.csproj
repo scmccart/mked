@@ -1,9 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <PublishAot>true</PublishAot>
-    <PublishSingleFile>true</PublishSingleFile>
-    <SelfContained>true</SelfContained>
+    <PackageId>mked</PackageId>
+    <IsPackable>true</IsPackable>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>mked</ToolCommandName>
+    <Description>Terminal Markdown viewer and editor — view and edit Markdown files directly in the console.</Description>
+    <PackageTags>markdown;terminal;tui;viewer;editor;console;cli;spectre-console</PackageTags>
     <!-- Spectre.Console.Cli uses reflection internally and references Assembly.Location;
          suppress all expected AOT/trim warnings from the library assembly. Our code is clean. -->
     <NoWarn>$(NoWarn);IL2026;IL2104;IL3000;IL3050</NoWarn>
@@ -12,6 +15,7 @@
     <TrimmerRootDescriptor Include="TrimmerRoots.xml" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="MinVer" PrivateAssets="all" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
     <PackageReference Include="Spectre.Console" />
     <PackageReference Include="Spectre.Console.Cli" />

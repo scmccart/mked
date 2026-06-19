@@ -10,8 +10,8 @@ permissions:
   packages: write
 
 jobs:
-  release:
-    name: Pack and publish to GitHub Packages
+  test:
+    name: Build and test
     runs-on: ubuntu-latest
 
     steps:
@@ -34,8 +34,130 @@ jobs:
       - name: Test
         run: dotnet test mked.slnx -c Release --no-build
 
+  build:
+    name: AOT publish (${{ matrix.rid }})
+    needs: test
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        include:
+          - rid: win-x64
+            runner: windows-latest
+            binary: Mked.Console.exe
+            asset: mked-win-x64.exe
+          - rid: linux-x64
+            runner: ubuntu-latest
+            binary: Mked.Console
+            asset: mked-linux-x64
+          - rid: linux-arm64
+            runner: ubuntu-24.04-arm
+            binary: Mked.Console
+            asset: mked-linux-arm64
+          - rid: osx-arm64
+            runner: macos-latest
+            binary: Mked.Console
+            asset: mked-osx-arm64
+          - rid: osx-x64
+            runner: macos-13
+            binary: Mked.Console
+            asset: mked-osx-x64
+
+    steps:
+      - name: Checkout (full history for MinVer)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore
+        run: dotnet restore mked.slnx
+
+      - name: Publish
+        run: >
+          dotnet publish src/Mked.Console/Mked.Console.csproj
+          -p:PublishProfile=${{ matrix.rid }}
+          -p:PublishDir=${{ github.workspace }}/publish/${{ matrix.rid }}
+
+      - name: Rename binary and compute checksum
+        shell: pwsh
+        run: |
+          $dir  = "${{ github.workspace }}/publish/${{ matrix.rid }}"
+          $src  = Join-Path $dir "${{ matrix.binary }}"
+          $dst  = Join-Path $dir "${{ matrix.asset }}"
+          Rename-Item -Path $src -NewName "${{ matrix.asset }}"
+          $hash = (Get-FileHash $dst -Algorithm SHA256).Hash.ToLower()
+          "$hash  ${{ matrix.asset }}" | Set-Content -Path (Join-Path $dir "${{ matrix.asset }}.sha256") -Encoding ASCII -NoNewline
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: binary-${{ matrix.rid }}
+          path: |
+            ${{ github.workspace }}/publish/${{ matrix.rid }}/${{ matrix.asset }}
+            ${{ github.workspace }}/publish/${{ matrix.rid }}/${{ matrix.asset }}.sha256
+
+  release:
+    name: Create GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download all binary artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./release-assets
+          merge-multiple: true
+
+      - name: Create GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${{ github.ref_name }}" \
+            --repo "${{ github.repository }}" \
+            --title "mked ${{ github.ref_name }}" \
+            --generate-notes \
+            ./release-assets/*
+
+  publish:
+    name: Push NuGet packages
+    needs: release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout (full history for MinVer)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore
+        run: dotnet restore mked.slnx
+
+      - name: Build
+        run: dotnet build mked.slnx -c Release --no-restore
+
       - name: Pack Mked.Controls
         run: dotnet pack src/Mked.Controls/Mked.Controls.csproj -c Release --no-build -o ./artifacts
+
+      - name: Pack mked tool
+        # PackAsTool triggers an internal framework-dependent publish; --no-build cannot be used here.
+        run: dotnet pack src/Mked.Console/Mked.Console.csproj -c Release -o ./artifacts
+
+      - name: Upload packages artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: packages
+          path: ./artifacts/*.nupkg
 
       - name: Push to GitHub Packages
         run: |
@@ -43,3 +165,30 @@ jobs:
             --source https://nuget.pkg.github.com/scmccart/index.json \
             --api-key ${{ secrets.GITHUB_TOKEN }} \
             --skip-duplicate
+
+  smoke:
+    name: Smoke test
+    needs: publish
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Download packages artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: packages
+          path: ./artifacts
+
+      - name: Install mked tool
+        run: dotnet tool install --global --prerelease --add-source ./artifacts mked
+
+      - name: Smoke test
+        # --plain renders to stdout and exits immediately (no interactive pager).
+        run: mked view --plain tests/fixtures/smoke-fixture.md
