@@ -97,6 +97,14 @@ public sealed class FileSystemReader_ReadAsync_Tests : IDisposable
         // privileges or platform-specific P/Invoke that is out of scope for this
         // test environment. Run in a non-admin process with icacls-restricted file
         // to exercise the UnauthorizedAccessException path.
+        //
+        // To implement:
+        // 1. Arrange: create a temp file via UniqueTempFile() and write some content.
+        // 2. Arrange: deny read access with icacls or FileSystemAccessRule ACL APIs.
+        // 3. Act: call await _reader.ReadAsync(path).
+        // 4. Assert: result.IsErr is true.
+        // 5. Assert: error is MkedError.IoError whose .Path equals the file path.
+        // 6. Cleanup: restore permissions before Dispose() deletes the file.
         await Task.CompletedTask;
     }
 }

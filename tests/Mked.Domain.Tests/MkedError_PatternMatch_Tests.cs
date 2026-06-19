@@ -3,11 +3,11 @@ namespace Mked.Domain.Tests;
 public class MkedError_PatternMatch_Tests
 {
     [Theory]
-    [InlineData("io")]
-    [InlineData("parse")]
-    [InlineData("validation")]
-    [InlineData("stream")]
-    public void SwitchExpression_MatchesAllCasesExhaustively(string kind)
+    [InlineData("io",         "io:/f")]
+    [InlineData("parse",      "parse:1,1")]
+    [InlineData("validation", "validation:f")]
+    [InlineData("stream",     "stream:r")]
+    public void SwitchExpression_MatchesAllCasesExhaustively(string kind, string expected)
     {
         MkedError error = kind switch
         {
@@ -26,6 +26,6 @@ public class MkedError_PatternMatch_Tests
             _                                       => throw new System.Diagnostics.UnreachableException(),
         };
 
-        matched.Should().NotBeNullOrEmpty();
+        matched.Should().Be(expected);
     }
 }

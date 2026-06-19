@@ -131,12 +131,17 @@ public sealed class FileSystemWriter_WriteAsync_Tests : IDisposable
         // insufficient permissions (e.g., writing into a directory whose ACL denies writes),
         // the FileSystemWriter still removes the .tmp file it created.
         //
-        // To implement: create a directory, revoke write permission via icacls/ACL APIs,
-        // call WriteAsync, then restore permissions and assert no .tmp files remain.
-        //
         // Skipped because programmatically toggling ACLs in a reliable cross-account
         // manner requires elevated privileges or platform-specific P/Invoke that is out
         // of scope for the current test environment.
+        //
+        // To implement:
+        // 1. Arrange: create a temp subdirectory and track it for cleanup.
+        // 2. Arrange: revoke the Write ACE on that directory via FileSystemAccessRule or icacls.
+        // 3. Act: call await _writer.WriteAsync(path, "content") targeting a file inside that dir.
+        // 4. Assert: result.IsErr is true.
+        // 5. Assert: Directory.GetFiles(subDir, "*.tmp") is empty (no orphaned .tmp file).
+        // 6. Cleanup: restore the ACE before Dispose() tries to delete the directory.
         await Task.CompletedTask;
     }
 }

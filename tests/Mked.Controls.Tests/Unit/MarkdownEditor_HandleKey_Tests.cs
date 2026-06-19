@@ -67,9 +67,12 @@ public class MarkdownEditor_HandleKey_Tests
     public void HandleKey_Tab_InsertsTheTwoSpaces()
     {
         var editor = new MarkdownEditor("hello");
-        // Move cursor to end of "hello"
-        for (int i = 0; i < 5; i++)
-            editor.HandleKey(Key(ConsoleKey.RightArrow));
+        // Move cursor to end of "hello" (5 right-arrow presses)
+        editor.HandleKey(Key(ConsoleKey.RightArrow));
+        editor.HandleKey(Key(ConsoleKey.RightArrow));
+        editor.HandleKey(Key(ConsoleKey.RightArrow));
+        editor.HandleKey(Key(ConsoleKey.RightArrow));
+        editor.HandleKey(Key(ConsoleKey.RightArrow));
 
         bool handled = editor.HandleKey(Key(ConsoleKey.Tab, '\t'));
 
