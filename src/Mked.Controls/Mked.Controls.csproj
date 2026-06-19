@@ -2,6 +2,8 @@
   <PropertyGroup>
     <PackageId>Mked.Controls</PackageId>
     <IsPackable>true</IsPackable>
+    <IsTrimmable>true</IsTrimmable>
+    <IsAotCompatible>true</IsAotCompatible>
     <Description>Spectre.Console widgets for viewing and editing Markdown in the terminal. Embed MarkdownViewer and MarkdownEditor in any Spectre.Console application.</Description>
     <PackageTags>markdown;spectre-console;terminal;tui;editor;viewer;console;cli</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
