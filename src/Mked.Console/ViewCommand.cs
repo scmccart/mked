@@ -80,6 +80,7 @@ public sealed class ViewCommand(OpenFileUseCase openFile, StreamInputUseCase str
 
         using var cts = new CancellationTokenSource();
         using var lifecycle = new TerminalLifecycle(cts);
+        using var input = ConsoleInputSource.Create();
 
         await AnsiConsole.Live(viewer).StartAsync(async liveCtx =>
         {
@@ -94,71 +95,11 @@ public sealed class ViewCommand(OpenFileUseCase openFile, StreamInputUseCase str
                 {
                     bool dirty = false;
 
-                    if (System.Console.KeyAvailable)
+                    while (input.TryRead(out var ev))
                     {
-                        var key = System.Console.ReadKey(intercept: true);
-                        var scrollInfo = viewer.ScrollInfo;
-                        int maxLine = Math.Max(0, scrollInfo.TotalLineCount - h);
-
-                        switch (key.Key)
-                        {
-                            case ConsoleKey.DownArrow when key.Modifiers == 0:
-                            case ConsoleKey.J when key.Modifiers == 0:
-                                currentLine = Math.Min(currentLine + 1, maxLine);
-                                dirty = true;
-                                break;
-
-                            case ConsoleKey.UpArrow when key.Modifiers == 0:
-                            case ConsoleKey.K when key.Modifiers == 0:
-                                currentLine = Math.Max(currentLine - 1, 0);
-                                dirty = true;
-                                break;
-
-                            case ConsoleKey.DownArrow when key.Modifiers == ConsoleModifiers.Shift:
-                            case ConsoleKey.J when key.Modifiers == ConsoleModifiers.Shift:
-                            {
-                                var next = scrollInfo.BlockStartLines.FirstOrDefault(s => s > currentLine, currentLine);
-                                currentLine = Math.Min(next, maxLine);
-                                dirty = true;
-                                break;
-                            }
-
-                            case ConsoleKey.UpArrow when key.Modifiers == ConsoleModifiers.Shift:
-                            case ConsoleKey.K when key.Modifiers == ConsoleModifiers.Shift:
-                            {
-                                var prev = scrollInfo.BlockStartLines.LastOrDefault(s => s < currentLine, 0);
-                                currentLine = prev;
-                                dirty = true;
-                                break;
-                            }
-
-                            case ConsoleKey.PageDown:
-                            case ConsoleKey.D when key.Modifiers == ConsoleModifiers.Control:
-                                currentLine = Math.Min(currentLine + Math.Max(1, h / 2), maxLine);
-                                dirty = true;
-                                break;
-
-                            case ConsoleKey.PageUp:
-                            case ConsoleKey.U when key.Modifiers == ConsoleModifiers.Control:
-                                currentLine = Math.Max(currentLine - Math.Max(1, h / 2), 0);
-                                dirty = true;
-                                break;
-
-                            case ConsoleKey.G when key.Modifiers == ConsoleModifiers.Shift:
-                                currentLine = maxLine;
-                                dirty = true;
-                                break;
-
-                            case ConsoleKey.G when key.Modifiers == 0:
-                                currentLine = 0;
-                                dirty = true;
-                                break;
-
-                            case ConsoleKey.Q:
-                            case ConsoleKey.C when key.Modifiers == ConsoleModifiers.Control:
-                                await cts.CancelAsync();
-                                return;
-                        }
+                        if (ViewerInput.Apply(ev, ref currentLine, viewer.ScrollInfo, h, out bool quit))
+                            dirty = true;
+                        if (quit) { await cts.CancelAsync(); return; }
                     }
 
                     int newW = AnsiConsole.Profile.Width;
@@ -202,6 +143,7 @@ public sealed class ViewCommand(OpenFileUseCase openFile, StreamInputUseCase str
 
         using var cts = new CancellationTokenSource();
         using var lifecycle = new TerminalLifecycle(cts);
+        using var input = ConsoleInputSource.Create();
         using var watcher = new FileWatcherAdapter(settings.Path!);
 
         // Feed file-change notifications into a channel so we can consume them in the poll loop
@@ -268,71 +210,11 @@ public sealed class ViewCommand(OpenFileUseCase openFile, StreamInputUseCase str
                         }
                     }
 
-                    if (System.Console.KeyAvailable)
+                    while (input.TryRead(out var ev))
                     {
-                        var key = System.Console.ReadKey(intercept: true);
-                        var scrollInfo = viewer.ScrollInfo;
-                        int maxLine = Math.Max(0, scrollInfo.TotalLineCount - h);
-
-                        switch (key.Key)
-                        {
-                            case ConsoleKey.DownArrow when key.Modifiers == 0:
-                            case ConsoleKey.J when key.Modifiers == 0:
-                                currentLine = Math.Min(currentLine + 1, maxLine);
-                                dirty = true;
-                                break;
-
-                            case ConsoleKey.UpArrow when key.Modifiers == 0:
-                            case ConsoleKey.K when key.Modifiers == 0:
-                                currentLine = Math.Max(currentLine - 1, 0);
-                                dirty = true;
-                                break;
-
-                            case ConsoleKey.DownArrow when key.Modifiers == ConsoleModifiers.Shift:
-                            case ConsoleKey.J when key.Modifiers == ConsoleModifiers.Shift:
-                            {
-                                var next = scrollInfo.BlockStartLines.FirstOrDefault(s => s > currentLine, currentLine);
-                                currentLine = Math.Min(next, maxLine);
-                                dirty = true;
-                                break;
-                            }
-
-                            case ConsoleKey.UpArrow when key.Modifiers == ConsoleModifiers.Shift:
-                            case ConsoleKey.K when key.Modifiers == ConsoleModifiers.Shift:
-                            {
-                                var prev = scrollInfo.BlockStartLines.LastOrDefault(s => s < currentLine, 0);
-                                currentLine = prev;
-                                dirty = true;
-                                break;
-                            }
-
-                            case ConsoleKey.PageDown:
-                            case ConsoleKey.D when key.Modifiers == ConsoleModifiers.Control:
-                                currentLine = Math.Min(currentLine + Math.Max(1, h / 2), maxLine);
-                                dirty = true;
-                                break;
-
-                            case ConsoleKey.PageUp:
-                            case ConsoleKey.U when key.Modifiers == ConsoleModifiers.Control:
-                                currentLine = Math.Max(currentLine - Math.Max(1, h / 2), 0);
-                                dirty = true;
-                                break;
-
-                            case ConsoleKey.G when key.Modifiers == ConsoleModifiers.Shift:
-                                currentLine = maxLine;
-                                dirty = true;
-                                break;
-
-                            case ConsoleKey.G when key.Modifiers == 0:
-                                currentLine = 0;
-                                dirty = true;
-                                break;
-
-                            case ConsoleKey.Q:
-                            case ConsoleKey.C when key.Modifiers == ConsoleModifiers.Control:
-                                await cts.CancelAsync();
-                                return;
-                        }
+                        if (ViewerInput.Apply(ev, ref currentLine, viewer.ScrollInfo, h, out bool quit))
+                            dirty = true;
+                        if (quit) { await cts.CancelAsync(); return; }
                     }
 
                     int newW = AnsiConsole.Profile.Width;
@@ -377,6 +259,9 @@ public sealed class ViewCommand(OpenFileUseCase openFile, StreamInputUseCase str
 
         using var cts = new CancellationTokenSource();
         using var lifecycle = new TerminalLifecycle(cts);
+        // Stream mode reads its content from stdin, so keyboard is handled separately via
+        // the null-mouse source (Console.KeyAvailable / ReadKey) to avoid conflicts.
+        using var input = new NullMouseInputSource();
 
         var docStream = _streamInput.ExecuteAsync(cts.Token);
         var viewerStream = renderer.Stream(docStream, cts.Token);
@@ -418,71 +303,11 @@ public sealed class ViewCommand(OpenFileUseCase openFile, StreamInputUseCase str
                         dirty = true;
                     }
 
-                    if (System.Console.KeyAvailable)
+                    while (input.TryRead(out var ev))
                     {
-                        var key = System.Console.ReadKey(intercept: true);
-                        var scrollInfo = viewer.ScrollInfo;
-                        int maxLine = Math.Max(0, scrollInfo.TotalLineCount - h);
-
-                        switch (key.Key)
-                        {
-                            case ConsoleKey.DownArrow when key.Modifiers == 0:
-                            case ConsoleKey.J when key.Modifiers == 0:
-                                currentLine = Math.Min(currentLine + 1, maxLine);
-                                dirty = true;
-                                break;
-
-                            case ConsoleKey.UpArrow when key.Modifiers == 0:
-                            case ConsoleKey.K when key.Modifiers == 0:
-                                currentLine = Math.Max(currentLine - 1, 0);
-                                dirty = true;
-                                break;
-
-                            case ConsoleKey.DownArrow when key.Modifiers == ConsoleModifiers.Shift:
-                            case ConsoleKey.J when key.Modifiers == ConsoleModifiers.Shift:
-                            {
-                                var next = scrollInfo.BlockStartLines.FirstOrDefault(s => s > currentLine, currentLine);
-                                currentLine = Math.Min(next, maxLine);
-                                dirty = true;
-                                break;
-                            }
-
-                            case ConsoleKey.UpArrow when key.Modifiers == ConsoleModifiers.Shift:
-                            case ConsoleKey.K when key.Modifiers == ConsoleModifiers.Shift:
-                            {
-                                var prev = scrollInfo.BlockStartLines.LastOrDefault(s => s < currentLine, 0);
-                                currentLine = prev;
-                                dirty = true;
-                                break;
-                            }
-
-                            case ConsoleKey.PageDown:
-                            case ConsoleKey.D when key.Modifiers == ConsoleModifiers.Control:
-                                currentLine = Math.Min(currentLine + Math.Max(1, h / 2), maxLine);
-                                dirty = true;
-                                break;
-
-                            case ConsoleKey.PageUp:
-                            case ConsoleKey.U when key.Modifiers == ConsoleModifiers.Control:
-                                currentLine = Math.Max(currentLine - Math.Max(1, h / 2), 0);
-                                dirty = true;
-                                break;
-
-                            case ConsoleKey.G when key.Modifiers == ConsoleModifiers.Shift:
-                                currentLine = maxLine;
-                                dirty = true;
-                                break;
-
-                            case ConsoleKey.G when key.Modifiers == 0:
-                                currentLine = 0;
-                                dirty = true;
-                                break;
-
-                            case ConsoleKey.Q:
-                            case ConsoleKey.C when key.Modifiers == ConsoleModifiers.Control:
-                                await cts.CancelAsync();
-                                return;
-                        }
+                        if (ViewerInput.Apply(ev, ref currentLine, viewer.ScrollInfo, h, out bool quit))
+                            dirty = true;
+                        if (quit) { await cts.CancelAsync(); return; }
                     }
 
                     int newW = AnsiConsole.Profile.Width;

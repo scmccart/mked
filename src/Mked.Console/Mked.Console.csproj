@@ -10,6 +10,8 @@
     <!-- Spectre.Console.Cli uses reflection internally and references Assembly.Location;
          suppress all expected AOT/trim warnings from the library assembly. Our code is clean. -->
     <NoWarn>$(NoWarn);IL2026;IL2104;IL3000;IL3050</NoWarn>
+    <!-- LibraryImport source generator emits unsafe marshaling stubs. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <TrimmerRootDescriptor Include="TrimmerRoots.xml" />

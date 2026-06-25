@@ -48,6 +48,7 @@ public sealed class EditCommand(OpenFileUseCase openFile, SaveFileUseCase saveFi
 
         using var outerCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         using var lifecycle = new TerminalLifecycle(outerCts);
+        using var input = ConsoleInputSource.Create();
 
         while (!session.Cancelled && !outerCts.Token.IsCancellationRequested)
         {
@@ -82,9 +83,63 @@ public sealed class EditCommand(OpenFileUseCase openFile, SaveFileUseCase saveFi
                     {
                         bool dirty = false;
 
-                        while (System.Console.KeyAvailable)
+                        while (input.TryRead(out var ev))
                         {
-                            var key = System.Console.ReadKey(intercept: true);
+                            // ── Mouse wheel ───────────────────────────────────────────────────
+                            if (ev.Kind == InputEventKind.Wheel)
+                            {
+                                int delta = ev.WheelDelta * ConsoleInputSource.LinesPerNotch;
+                                if (session.SplitEnabled && !editor.HasFocus)
+                                {
+                                    int viewportH = editor.ViewportHeight ?? h;
+                                    int maxLine = Math.Max(0, preview.ScrollInfo.TotalLineCount - viewportH);
+                                    session.PreviewTopLine = Math.Clamp(session.PreviewTopLine + delta, 0, maxLine);
+                                }
+                                else
+                                {
+                                    editor.Scroll(delta);
+                                }
+                                dirty = true;
+                                continue;
+                            }
+
+                            // ── Mouse click — move editor cursor or switch pane focus ─────────
+                            if (ev.Kind == InputEventKind.Click)
+                            {
+                                int W = AnsiConsole.Profile.Width;
+                                bool split = session.SplitEnabled;
+
+                                if (split && ev.ClickX >= W / 2)
+                                {
+                                    // Right half → switch focus to the preview pane.
+                                    editor.HasFocus = false;
+                                }
+                                else
+                                {
+                                    // Left half (or non-split) → focus editor and move cursor.
+                                    if (split) editor.HasFocus = true;
+
+                                    // In split mode the editor pane is wrapped in a Panel with a
+                                    // 1-cell rounded border on every side, so content starts at
+                                    // screen (row 1, col 1). In non-split mode there is no border.
+                                    int originRow = split ? 1 : 0;
+                                    int originCol = split ? 1 : 0;
+                                    int relRow = ev.ClickY - originRow;
+                                    int relCol = ev.ClickX - originCol;
+
+                                    // Ignore clicks on the status bar row (below the viewport).
+                                    if (relRow >= 0 && ev.ClickY < h)
+                                    {
+                                        int line = editor.TopLineIndex + relRow + 1;  // 1-based
+                                        int col  = Math.Max(0, relCol) + 1;           // 1-based
+                                        editor.MoveCursorTo(line, col);
+                                    }
+                                }
+                                dirty = true;
+                                continue;
+                            }
+
+                            var key = ev.Key;
 
                             // ── Host-level keys — always handled regardless of focus ──────────
                             switch (key)

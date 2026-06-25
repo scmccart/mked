@@ -272,6 +272,19 @@ internal sealed class EditorState
     }
 
     /// <summary>
+    /// Moves the cursor to the given 1-based (line, column), clamping to the valid range.
+    /// No-op when the clamped position equals the current cursor. Does not push to the undo stack.
+    /// </summary>
+    public void MoveCursorTo(CursorPosition raw)
+    {
+        CursorPosition next = CursorNavigation.Clamp(Buffer, raw);
+        if (next == Cursor) return;
+        SetCursorInternal(next);
+        foreach (var observer in _observers)
+            observer.OnCursorMoved(Cursor);
+    }
+
+    /// <summary>
     /// Reverts the most recent buffer or cursor change. No-op when <see cref="CanUndo"/> is <see langword="false"/>.
     /// </summary>
     public void Undo()

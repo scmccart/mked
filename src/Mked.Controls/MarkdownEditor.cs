@@ -31,8 +31,12 @@ public sealed class MarkdownEditor : IRenderable, IEditorObserver
     private string? _highlightedBuffer;
     private IReadOnlyList<StyledSpan> _cachedSpans = [];
 
-    // Scroll state — updated during Render to keep cursor visible.
+    // Scroll state.
+    // _cursorMoved is set by the OnCursorMoved observer callback and cleared after each Render.
+    // When true, Render re-centers the viewport around the cursor. When false (e.g. after a
+    // wheel scroll), the viewport offset is left where Scroll() set it.
     private int _topLineIndex;
+    private bool _cursorMoved = true; // start true so initial render positions correctly
 
     /// <summary>Initialises a new <see cref="MarkdownEditor"/> with an optional initial buffer.</summary>
     public MarkdownEditor(string initialBuffer = "")
@@ -92,6 +96,33 @@ public sealed class MarkdownEditor : IRenderable, IEditorObserver
 
     /// <summary>Marks the current buffer as the clean baseline. Call after a successful save.</summary>
     public void MarkClean() => _state.MarkClean();
+
+    /// <summary>
+    /// The 0-based index of the first buffer line currently visible in the viewport.
+    /// Use this together with a click's content-relative row to map it to a buffer line number.
+    /// </summary>
+    public int TopLineIndex => _topLineIndex;
+
+    /// <summary>
+    /// Moves the cursor to the given 1-based <paramref name="line"/> and <paramref name="column"/>,
+    /// clamping to the valid range (past-end of line → line end; beyond last line → last line).
+    /// Does not push to the undo stack. A subsequent render will re-center the viewport if needed.
+    /// </summary>
+    public void MoveCursorTo(int line, int column) =>
+        _state.MoveCursorTo(new CursorPosition(line, column));
+
+    /// <summary>
+    /// Scrolls the viewport by <paramref name="lineDelta"/> lines without moving the cursor.
+    /// The offset is clamped to the valid range. A subsequent cursor movement will re-center
+    /// the viewport around the cursor as usual.
+    /// </summary>
+    public void Scroll(int lineDelta)
+    {
+        int totalLines = CountBufferLines(_state.Buffer);
+        int maxTop = Math.Max(0, totalLines - (ViewportHeight ?? totalLines));
+        _topLineIndex = Math.Clamp(_topLineIndex + lineDelta, 0, maxTop);
+        // Do NOT set _cursorMoved — leave the viewport where we scrolled it.
+    }
 
     /// <summary>Returns a snapshot of the status line for this editor frame.</summary>
     public IRenderable StatusLine() =>
@@ -224,7 +255,7 @@ public sealed class MarkdownEditor : IRenderable, IEditorObserver
         BufferChanged?.Invoke(newBuffer);
     }
 
-    void IEditorObserver.OnCursorMoved(CursorPosition position) { }
+    void IEditorObserver.OnCursorMoved(CursorPosition position) => _cursorMoved = true;
 
     // ─── IRenderable ─────────────────────────────────────────────────────────────
 
@@ -240,14 +271,23 @@ public sealed class MarkdownEditor : IRenderable, IEditorObserver
         int? viewportHeight = ViewportHeight;
         if (viewportHeight.HasValue)
         {
-            // Keep the cursor row within the visible viewport window.
             int editorH = viewportHeight.Value;
-            int cursorRow = _state.Cursor.Line - 1; // 0-based
-            if (cursorRow - 1 < _topLineIndex)
-                _topLineIndex = Math.Max(0, cursorRow - 1);
-            else if (cursorRow >= _topLineIndex + editorH)
-                _topLineIndex = cursorRow - editorH + 1;
-            _topLineIndex = Math.Max(0, _topLineIndex);
+
+            if (_cursorMoved)
+            {
+                // Re-center the viewport so the cursor row stays visible.
+                int cursorRow = _state.Cursor.Line - 1; // 0-based
+                if (cursorRow - 1 < _topLineIndex)
+                    _topLineIndex = Math.Max(0, cursorRow - 1);
+                else if (cursorRow >= _topLineIndex + editorH)
+                    _topLineIndex = cursorRow - editorH + 1;
+                _cursorMoved = false;
+            }
+
+            // Always clamp to valid scroll range.
+            int totalLines = CountBufferLines(_state.Buffer);
+            int maxTop = Math.Max(0, totalLines - editorH);
+            _topLineIndex = Math.Clamp(_topLineIndex, 0, maxTop);
         }
 
         var widget = new MarkdownEditorWidget(
@@ -276,4 +316,13 @@ public sealed class MarkdownEditor : IRenderable, IEditorObserver
 
     private static int CountWords(string buffer) =>
         buffer.Split([' ', '\t', '\n', '\r'], StringSplitOptions.RemoveEmptyEntries).Length;
+
+    private static int CountBufferLines(string buffer)
+    {
+        if (buffer.Length == 0) return 1;
+        int count = 1;
+        foreach (char c in buffer)
+            if (c == '\n') count++;
+        return count;
+    }
 }
