@@ -167,6 +167,7 @@ public sealed class ViewCommand(OpenFileUseCase openFile, StreamInputUseCase str
             catch (Exception ex)
             {
                 watcherFault = ex;
+                System.Threading.Thread.MemoryBarrier(); // ensure fault write is visible before cancel propagates
                 cts.Cancel();
             }
             finally
@@ -206,6 +207,9 @@ public sealed class ViewCommand(OpenFileUseCase openFile, StreamInputUseCase str
                                 currentLine,
                                 h);
                             baseViewer = newViewer;
+                            // Refresh viewer immediately so the input loop below clamps
+                            // currentLine against the new document's ScrollInfo, not the old one.
+                            viewer = baseViewer with { TopLineIndex = currentLine, ViewportHeight = h };
                             dirty = true;
                         }
                     }
@@ -273,14 +277,27 @@ public sealed class ViewCommand(OpenFileUseCase openFile, StreamInputUseCase str
                 FullMode = System.Threading.Channels.BoundedChannelFullMode.DropOldest,
             });
 
+        Exception? streamFault = null;
         var streamTask = Task.Run(async () =>
         {
-            await foreach (var v in viewerStream)
+            try
             {
-                viewerChannel.Writer.TryWrite(v);
+                await foreach (var v in viewerStream)
+                {
+                    viewerChannel.Writer.TryWrite(v);
+                }
             }
-
-            viewerChannel.Writer.TryComplete();
+            catch (OperationCanceledException) { }
+            catch (Exception ex)
+            {
+                streamFault = ex;
+                System.Threading.Thread.MemoryBarrier(); // ensure fault write is visible before cancel propagates
+                cts.Cancel();
+            }
+            finally
+            {
+                viewerChannel.Writer.TryComplete();
+            }
         }, cts.Token);
 
         await AnsiConsole.Live(viewer).StartAsync(async liveCtx =>
@@ -340,6 +357,9 @@ public sealed class ViewCommand(OpenFileUseCase openFile, StreamInputUseCase str
 
             await streamTask.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
         });
+
+        if (streamFault is not null)
+            return ErrorPresenter.Show(new MkedError.StreamError(streamFault.Message));
 
         return 0;
     }

@@ -21,8 +21,9 @@ internal static class ViewerInput
     {
         quit = false;
 
-        // The viewer has no cursor; clicks have nothing to act on.
+        // The viewer has no cursor; clicks and pastes have nothing to act on.
         if (ev.Kind == InputEventKind.Click) return false;
+        if (ev.Kind == InputEventKind.Paste) return false;
 
         int maxLine = Math.Max(0, scrollInfo.TotalLineCount - viewportHeight);
 

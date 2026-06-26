@@ -184,10 +184,18 @@ public sealed class EditCommand(OpenFileUseCase openFile, SaveFileUseCase saveFi
                                     dirty = true;
                                     continue;
 
-                                // ── Copy (Ctrl+C) — only when text is selected ────────────────
+                                // ── Copy (Ctrl+C) — copy selection if active, otherwise quit ──
                                 case { Key: ConsoleKey.C, Modifiers: ConsoleModifiers.Control }:
                                     if (editor.HasSelection)
+                                    {
                                         System.Console.Write(Osc52.EncodeCopy(editor.SelectedText));
+                                    }
+                                    else
+                                    {
+                                        session.PendingAction = HostAction.Quit;
+                                        await cts.CancelAsync();
+                                        return;
+                                    }
                                     continue;
 
                                 // ── Cut (Ctrl+X) — only when text is selected ─────────────────

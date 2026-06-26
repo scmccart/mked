@@ -244,9 +244,9 @@ internal sealed class TerminalInputParser
 
     // ─── SS3: ESC O x ────────────────────────────────────────────────────────
 
-    private static bool TryParseSs3(List<byte> buf, out InputEvent ev)
+    private bool TryParseSs3(List<byte> buf, out InputEvent ev)
     {
-        if (buf.Count < 3) { ev = default; return false; }
+        if (buf.Count < 3) { SavePending(buf); ev = default; return false; }
         byte ch = buf[2];
         RemoveConsumed(buf, 3);
         ev = InputEvent.OfKey(ch switch

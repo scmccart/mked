@@ -5,8 +5,11 @@ namespace Mked.Console;
 /// <c>ReadConsoleInputW</c> so that both keystrokes and mouse-wheel events are delivered.
 /// On construction the input mode is adjusted to enable mouse input and disable Quick-Edit
 /// mode (which would otherwise swallow wheel events for text selection).
-/// <c>ENABLE_PROCESSED_INPUT</c> is kept on so Ctrl+C signals continue to reach
-/// <see cref="TerminalLifecycle"/>.
+/// <c>ENABLE_PROCESSED_INPUT</c> is <b>cleared</b> so that Ctrl+C and Ctrl+X arrive as raw
+/// <c>KEY_EVENT</c>s that the editor can intercept for copy/cut and dirty-aware quit.
+/// As a consequence <see cref="System.Console.CancelKeyPress"/> does <b>not</b> fire on Windows
+/// while this source is active — the editor handles Ctrl+C directly. SIGTERM is still
+/// delivered via <see cref="TerminalLifecycle"/>'s POSIX signal registration.
 /// </summary>
 internal sealed class WindowsConsoleInputSource : IConsoleInputSource
 {
