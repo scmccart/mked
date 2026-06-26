@@ -66,6 +66,40 @@ public sealed class MarkdownEditor : IRenderable, IEditorObserver
     public bool CanRedo => _state.CanRedo;
 
     /// <summary>
+    /// Returns <see langword="true"/> when a non-empty text selection exists
+    /// (i.e. Shift+Arrow has been used to mark a range).
+    /// </summary>
+    public bool HasSelection => _state.HasSelection;
+
+    /// <summary>
+    /// Returns the currently selected text, or an empty string when nothing is selected.
+    /// </summary>
+    public string SelectedText => _state.SelectedText;
+
+    /// <summary>
+    /// Inserts <paramref name="text"/> into the buffer. When a selection is active the
+    /// selection is replaced with <paramref name="text"/> as a single undo step; otherwise
+    /// the text is inserted at the cursor and the cursor is advanced past it.
+    /// </summary>
+    public void InsertText(string text)
+    {
+        if (string.IsNullOrEmpty(text)) return;
+        TextRange range = _state.HasSelection
+            ? _state.SelectionRange
+            : new TextRange(_state.Cursor, _state.Cursor);
+        _state.ReplaceRange(range, text);
+    }
+
+    /// <summary>
+    /// Deletes the selected text. No-op when no selection is active.
+    /// </summary>
+    public void DeleteSelection()
+    {
+        if (_state.HasSelection)
+            _state.DeleteSelection();
+    }
+
+    /// <summary>
     /// Controls whether the block cursor is rendered. Set to <see langword="false"/> when this
     /// pane does not have focus in a split-view layout.
     /// </summary>
@@ -140,75 +174,154 @@ public sealed class MarkdownEditor : IRenderable, IEditorObserver
         {
             // ── Undo / Redo ────────────────────────────────────────────────────
             case { Key: ConsoleKey.Z, Modifiers: ConsoleModifiers.Control } when _state.CanUndo:
-                _state.Undo();
+                _state.Undo(); // clears anchor internally
                 return true;
 
             case { Key: ConsoleKey.Y, Modifiers: ConsoleModifiers.Control } when _state.CanRedo:
-                _state.Redo();
+                _state.Redo(); // clears anchor internally
                 return true;
 
-            // ── Word movement ──────────────────────────────────────────────────
+            // ── Word selection (Ctrl+Shift+Arrow) — must precede Ctrl+Arrow ───
+            case { Key: ConsoleKey.LeftArrow, Modifiers: ConsoleModifiers.Control | ConsoleModifiers.Shift }:
+            {
+                _state.BeginSelection();
+                _state.MoveCursorWordLeft();
+                return true;
+            }
+
+            case { Key: ConsoleKey.RightArrow, Modifiers: ConsoleModifiers.Control | ConsoleModifiers.Shift }:
+            {
+                _state.BeginSelection();
+                _state.MoveCursorWordRight();
+                return true;
+            }
+
+            // ── Word movement (Ctrl+Arrow) ─────────────────────────────────────
             case { Key: ConsoleKey.LeftArrow, Modifiers: ConsoleModifiers.Control }:
             {
+                bool hadSelection = _state.HasSelection;
+                _state.ClearSelection();
                 var p = _state.Cursor;
                 _state.MoveCursorWordLeft();
-                return _state.Cursor != p;
+                return _state.Cursor != p || hadSelection;
             }
 
             case { Key: ConsoleKey.RightArrow, Modifiers: ConsoleModifiers.Control }:
             {
+                bool hadSelection = _state.HasSelection;
+                _state.ClearSelection();
                 var p = _state.Cursor;
                 _state.MoveCursorWordRight();
-                return _state.Cursor != p;
+                return _state.Cursor != p || hadSelection;
             }
 
-            // ── Arrow keys ─────────────────────────────────────────────────────
+            // ── Shift+Arrow / Shift+Home / Shift+End — extend selection ────────
+            case { Key: ConsoleKey.LeftArrow, Modifiers: ConsoleModifiers.Shift }:
+            {
+                _state.BeginSelection();
+                _state.MoveCursorLeft();
+                return true;
+            }
+
+            case { Key: ConsoleKey.RightArrow, Modifiers: ConsoleModifiers.Shift }:
+            {
+                _state.BeginSelection();
+                _state.MoveCursorRight();
+                return true;
+            }
+
+            case { Key: ConsoleKey.UpArrow, Modifiers: ConsoleModifiers.Shift }:
+            {
+                _state.BeginSelection();
+                _state.MoveCursorUp();
+                return true;
+            }
+
+            case { Key: ConsoleKey.DownArrow, Modifiers: ConsoleModifiers.Shift }:
+            {
+                _state.BeginSelection();
+                _state.MoveCursorDown();
+                return true;
+            }
+
+            case { Key: ConsoleKey.Home, Modifiers: ConsoleModifiers.Shift }:
+            {
+                _state.BeginSelection();
+                _state.MoveCursorToLineStart();
+                return true;
+            }
+
+            case { Key: ConsoleKey.End, Modifiers: ConsoleModifiers.Shift }:
+            {
+                _state.BeginSelection();
+                _state.MoveCursorToLineEnd();
+                return true;
+            }
+
+            // ── Arrow keys (plain) — collapse any selection ────────────────────
             case { Key: ConsoleKey.LeftArrow }:
             {
+                bool hadSelection = _state.HasSelection;
+                _state.ClearSelection();
                 var p = _state.Cursor;
                 _state.MoveCursorLeft();
-                return _state.Cursor != p;
+                return _state.Cursor != p || hadSelection;
             }
 
             case { Key: ConsoleKey.RightArrow }:
             {
+                bool hadSelection = _state.HasSelection;
+                _state.ClearSelection();
                 var p = _state.Cursor;
                 _state.MoveCursorRight();
-                return _state.Cursor != p;
+                return _state.Cursor != p || hadSelection;
             }
 
             case { Key: ConsoleKey.UpArrow }:
             {
+                bool hadSelection = _state.HasSelection;
+                _state.ClearSelection();
                 var p = _state.Cursor;
                 _state.MoveCursorUp();
-                return _state.Cursor != p;
+                return _state.Cursor != p || hadSelection;
             }
 
             case { Key: ConsoleKey.DownArrow }:
             {
+                bool hadSelection = _state.HasSelection;
+                _state.ClearSelection();
                 var p = _state.Cursor;
                 _state.MoveCursorDown();
-                return _state.Cursor != p;
+                return _state.Cursor != p || hadSelection;
             }
 
-            // ── Line start / end ───────────────────────────────────────────────
+            // ── Line start / end (plain) — collapse any selection ──────────────
             case { Key: ConsoleKey.Home }:
             {
+                bool hadSelection = _state.HasSelection;
+                _state.ClearSelection();
                 var p = _state.Cursor;
                 _state.MoveCursorToLineStart();
-                return _state.Cursor != p;
+                return _state.Cursor != p || hadSelection;
             }
 
             case { Key: ConsoleKey.End }:
             {
+                bool hadSelection = _state.HasSelection;
+                _state.ClearSelection();
                 var p = _state.Cursor;
                 _state.MoveCursorToLineEnd();
-                return _state.Cursor != p;
+                return _state.Cursor != p || hadSelection;
             }
 
             // ── Deletion ───────────────────────────────────────────────────────
             case { Key: ConsoleKey.Backspace }:
             {
+                if (_state.HasSelection)
+                {
+                    _state.DeleteSelection();
+                    return true;
+                }
                 CursorPosition target = CursorNavigation.MoveLeft(_state.Buffer, _state.Cursor);
                 if (target == _state.Cursor) return false;
                 _state.Delete(new TextRange(target, _state.Cursor));
@@ -217,6 +330,11 @@ public sealed class MarkdownEditor : IRenderable, IEditorObserver
 
             case { Key: ConsoleKey.Delete }:
             {
+                if (_state.HasSelection)
+                {
+                    _state.DeleteSelection();
+                    return true;
+                }
                 CursorPosition next = CursorNavigation.MoveRight(_state.Buffer, _state.Cursor);
                 if (next == _state.Cursor) return false;
                 _state.Delete(new TextRange(_state.Cursor, next));
@@ -225,12 +343,22 @@ public sealed class MarkdownEditor : IRenderable, IEditorObserver
 
             // ── Enter (newline) ────────────────────────────────────────────────
             case { Key: ConsoleKey.Enter }:
+                if (_state.HasSelection)
+                {
+                    _state.ReplaceRange(_state.SelectionRange, "\n");
+                    return true;
+                }
                 _state.Insert(_state.Cursor, "\n");
                 _state.MoveCursorRight();
                 return true;
 
             // ── Tab — two-space indent ─────────────────────────────────────────
             case { Key: ConsoleKey.Tab, Modifiers: 0 }:
+                if (_state.HasSelection)
+                {
+                    _state.ReplaceRange(_state.SelectionRange, "  ");
+                    return true;
+                }
                 _state.Insert(_state.Cursor, "  ");
                 _state.MoveCursorRight();
                 _state.MoveCursorRight();
@@ -238,6 +366,11 @@ public sealed class MarkdownEditor : IRenderable, IEditorObserver
 
             // ── Printable characters ───────────────────────────────────────────
             case { KeyChar: char c } when !char.IsControl(c):
+                if (_state.HasSelection)
+                {
+                    _state.ReplaceRange(_state.SelectionRange, c.ToString());
+                    return true;
+                }
                 _state.Insert(_state.Cursor, c.ToString());
                 _state.MoveCursorRight();
                 return true;
@@ -290,13 +423,23 @@ public sealed class MarkdownEditor : IRenderable, IEditorObserver
             _topLineIndex = Math.Clamp(_topLineIndex, 0, maxTop);
         }
 
+        int selStart = -1, selEnd = -1;
+        if (_state.HasSelection)
+        {
+            TextRange sel = _state.SelectionRange;
+            selStart = BufferOperations.ToOffset(_state.Buffer, sel.Start);
+            selEnd   = BufferOperations.ToOffset(_state.Buffer, sel.End);
+        }
+
         var widget = new MarkdownEditorWidget(
             _state.Buffer,
             (_state.Cursor.Line, _state.Cursor.Column),
             _cachedSpans,
             _topLineIndex,
             viewportHeight,
-            HasFocus);
+            HasFocus,
+            selStart,
+            selEnd);
 
         return widget.Render(options, maxWidth);
     }

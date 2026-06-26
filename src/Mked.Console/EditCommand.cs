@@ -85,6 +85,17 @@ public sealed class EditCommand(OpenFileUseCase openFile, SaveFileUseCase saveFi
 
                         while (input.TryRead(out var ev))
                         {
+                            // ── Bracketed paste ──────────────────────────────────────────────
+                            if (ev.Kind == InputEventKind.Paste)
+                            {
+                                if (ev.PasteText is { Length: > 0 } pasteText && editor.HasFocus)
+                                {
+                                    editor.InsertText(pasteText);
+                                    dirty = true;
+                                }
+                                continue;
+                            }
+
                             // ── Mouse wheel ───────────────────────────────────────────────────
                             if (ev.Kind == InputEventKind.Wheel)
                             {
@@ -171,6 +182,22 @@ public sealed class EditCommand(OpenFileUseCase openFile, SaveFileUseCase saveFi
                                         editor.HasFocus = true;
                                     editor.ViewportHeight = ComputeViewportHeight(h, session.SplitEnabled);
                                     dirty = true;
+                                    continue;
+
+                                // ── Copy (Ctrl+C) — only when text is selected ────────────────
+                                case { Key: ConsoleKey.C, Modifiers: ConsoleModifiers.Control }:
+                                    if (editor.HasSelection)
+                                        System.Console.Write(Osc52.EncodeCopy(editor.SelectedText));
+                                    continue;
+
+                                // ── Cut (Ctrl+X) — only when text is selected ─────────────────
+                                case { Key: ConsoleKey.X, Modifiers: ConsoleModifiers.Control }:
+                                    if (editor.HasSelection)
+                                    {
+                                        System.Console.Write(Osc52.EncodeCopy(editor.SelectedText));
+                                        editor.DeleteSelection();
+                                        dirty = true;
+                                    }
                                     continue;
                             }
 

@@ -1,7 +1,8 @@
 namespace Mked.Console;
 
 /// <summary>
-/// A discriminated union of interactive console input: a decoded keystroke or a mouse-wheel notch.
+/// A discriminated union of interactive console input: a decoded keystroke, a mouse-wheel
+/// notch, a mouse click, or a bracketed-paste block.
 /// </summary>
 public readonly struct InputEvent
 {
@@ -32,6 +33,12 @@ public readonly struct InputEvent
     /// </summary>
     public int ClickY { get; }
 
+    /// <summary>
+    /// The pasted text content. Valid only when <see cref="Kind"/> is
+    /// <see cref="InputEventKind.Paste"/>.
+    /// </summary>
+    public string? PasteText { get; }
+
     private InputEvent(ConsoleKeyInfo key)
     {
         Kind = InputEventKind.Key;
@@ -51,6 +58,12 @@ public readonly struct InputEvent
         ClickY = y;
     }
 
+    private InputEvent(string pasteText)
+    {
+        Kind = InputEventKind.Paste;
+        PasteText = pasteText;
+    }
+
     /// <summary>Creates a key event wrapping <paramref name="key"/>.</summary>
     public static InputEvent OfKey(ConsoleKeyInfo key) => new(key);
 
@@ -63,4 +76,9 @@ public readonly struct InputEvent
     /// Creates a left-button click event at the given 0-based screen coordinates.
     /// </summary>
     public static InputEvent OfClick(int x, int y) => new(x, y);
+
+    /// <summary>
+    /// Creates a bracketed-paste event carrying <paramref name="text"/> delivered by the terminal.
+    /// </summary>
+    public static InputEvent OfPaste(string text) => new(text);
 }

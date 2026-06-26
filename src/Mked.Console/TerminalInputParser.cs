@@ -3,13 +3,18 @@ namespace Mked.Console;
 /// <summary>
 /// Pure byte-stream state machine that decodes terminal input into <see cref="InputEvent"/>
 /// instances. Handles printable UTF-8, control characters, VT escape sequences for
-/// navigation keys, and SGR 1006 mouse wheel sequences. The parser is independent of
-/// any I/O so it can be exercised in unit tests without a real terminal.
+/// navigation keys, SGR 1006 mouse wheel sequences, and bracketed-paste blocks
+/// (<c>ESC [ 2 0 0 ~</c> … <c>ESC [ 2 0 1 ~</c>). The parser is independent of any I/O
+/// so it can be exercised in unit tests without a real terminal.
 /// </summary>
 internal sealed class TerminalInputParser
 {
     // Unprocessed bytes from a previous TryParse call (partial escape sequence).
     private readonly List<byte> _pending = new(16);
+
+    // Bracketed-paste accumulation. Non-null while we are between the start marker
+    // (ESC [ 2 0 0 ~) and the end marker (ESC [ 2 0 1 ~).
+    private List<byte>? _pasteBuffer;
 
     /// <summary>
     /// Attempts to parse one complete event from <paramref name="incoming"/> plus any bytes
@@ -28,6 +33,12 @@ internal sealed class TerminalInputParser
         }
 
         if (incoming.Count == 0) { ev = default; return false; }
+
+        // ── Bracketed-paste accumulation ──────────────────────────────────────
+        // While inside a paste block, route all bytes to the paste buffer until
+        // we recognise the end marker ESC [ 2 0 1 ~.
+        if (_pasteBuffer is not null)
+            return TryAccumulatePaste(incoming, out ev);
 
         byte first = incoming[0];
 
@@ -64,6 +75,47 @@ internal sealed class TerminalInputParser
         return true;
     }
 
+    // Accumulate bytes into the paste buffer until ESC [ 2 0 1 ~ is seen, then emit a Paste event.
+    private bool TryAccumulatePaste(List<byte> buf, out InputEvent ev)
+    {
+        // Search for the end marker: 0x1b 0x5b 0x32 0x30 0x31 0x7e  (ESC [ 2 0 1 ~)
+        ReadOnlySpan<byte> endMarker = [0x1b, 0x5b, 0x32, 0x30, 0x31, 0x7e];
+        int endIdx = IndexOf(buf, endMarker);
+
+        if (endIdx < 0)
+        {
+            // End marker not yet received; buffer everything and wait.
+            _pasteBuffer!.AddRange(buf);
+            buf.Clear();
+            ev = default;
+            return false;
+        }
+
+        // Bytes before the end marker are paste content; the marker itself is consumed.
+        _pasteBuffer!.AddRange(buf.Take(endIdx));
+        RemoveConsumed(buf, endIdx + endMarker.Length);
+
+        string text = System.Text.Encoding.UTF8.GetString(_pasteBuffer!.ToArray());
+        _pasteBuffer = null;
+
+        ev = InputEvent.OfPaste(text);
+        return true;
+    }
+
+    private static int IndexOf(List<byte> haystack, ReadOnlySpan<byte> needle)
+    {
+        for (int i = 0; i <= haystack.Count - needle.Length; i++)
+        {
+            bool found = true;
+            for (int j = 0; j < needle.Length; j++)
+            {
+                if (haystack[i + j] != needle[j]) { found = false; break; }
+            }
+            if (found) return i;
+        }
+        return -1;
+    }
+
     // ─── CSI: ESC [ ... ──────────────────────────────────────────────────────
 
     private bool TryParseCsi(List<byte> buf, out InputEvent ev)
@@ -85,6 +137,16 @@ internal sealed class TerminalInputParser
         byte finalByte = buf[paramEnd];
         string paramStr = ByteRangeToString(buf, 2, paramEnd - 2);
         int consumed = paramEnd + 1;
+
+        // ── Bracketed paste: ESC [ 2 0 0 ~  (start) ─────────────────────────
+        // Check BEFORE the generic '~' key mapping below.
+        if (finalByte == (byte)'~' && paramStr == "200")
+        {
+            RemoveConsumed(buf, consumed);
+            _pasteBuffer = new List<byte>(256);
+            // Immediately try to accumulate any bytes already in the buffer.
+            return TryAccumulatePaste(buf, out ev);
+        }
 
         ConsoleKeyInfo key = ParseCsiKey(paramStr, finalByte);
         RemoveConsumed(buf, consumed);

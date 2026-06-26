@@ -44,6 +44,7 @@ internal sealed class EditorState
     private readonly Stack<IEditorCommand> _undoStack = new();
     private readonly Stack<IEditorCommand> _redoStack = new();
     private bool _isDirty;
+    private CursorPosition? _anchor;
 
     /// <summary>Creates an <see cref="EditorState"/> with the given initial buffer.</summary>
     public EditorState(string initialBuffer)
@@ -73,6 +74,56 @@ internal sealed class EditorState
     public bool CanRedo => _redoStack.Count > 0;
 
     /// <summary>
+    /// The fixed end of the current selection. When non-null and offset-different from
+    /// <see cref="Cursor"/>, the selection is the range between the anchor and the cursor.
+    /// </summary>
+    public CursorPosition? Anchor => _anchor;
+
+    /// <summary>
+    /// Returns <see langword="true"/> when a non-empty selection exists (anchor set and
+    /// at a different buffer offset than <see cref="Cursor"/>).
+    /// </summary>
+    public bool HasSelection =>
+        _anchor is { } a &&
+        BufferOperations.ToOffset(Buffer, a) != BufferOperations.ToOffset(Buffer, Cursor);
+
+    /// <summary>
+    /// Returns the normalised selection range (Start offset ≤ End offset).
+    /// Only valid when <see cref="HasSelection"/> is <see langword="true"/>.
+    /// </summary>
+    public TextRange SelectionRange
+    {
+        get
+        {
+            var anchor = _anchor!.Value;
+            int anchorOffset = BufferOperations.ToOffset(Buffer, anchor);
+            int cursorOffset = BufferOperations.ToOffset(Buffer, Cursor);
+            return anchorOffset <= cursorOffset
+                ? new TextRange(anchor, Cursor)
+                : new TextRange(Cursor, anchor);
+        }
+    }
+
+    /// <summary>
+    /// Returns the selected text. Empty string when <see cref="HasSelection"/> is
+    /// <see langword="false"/>.
+    /// </summary>
+    public string SelectedText =>
+        HasSelection ? BufferOperations.Substring(Buffer, SelectionRange) : string.Empty;
+
+    /// <summary>
+    /// Sets the selection anchor to the current cursor position if no anchor is already set.
+    /// Call before every shift-move so the first shift-press locks the anchor.
+    /// </summary>
+    public void BeginSelection()
+    {
+        _anchor ??= Cursor;
+    }
+
+    /// <summary>Clears the selection anchor. The cursor position is unchanged.</summary>
+    public void ClearSelection() => _anchor = null;
+
+    /// <summary>
     /// Records the current buffer as the clean baseline, resetting <see cref="IsDirty"/> to
     /// <see langword="false"/>. Call after a successful save or when loading a new document.
     /// </summary>
@@ -94,6 +145,7 @@ internal sealed class EditorState
         ArgumentNullException.ThrowIfNull(newBuffer);
         _undoStack.Clear();
         _redoStack.Clear();
+        _anchor = null;
         _cleanBuffer = newBuffer;
         Buffer = newBuffer;
         Cursor = new CursorPosition(1, 1);
@@ -165,6 +217,42 @@ internal sealed class EditorState
             observer.OnBufferChanged(Buffer);
             observer.OnCursorMoved(Cursor);
         }
+    }
+
+    /// <summary>
+    /// Replaces the characters within <paramref name="range"/> with <paramref name="text"/>,
+    /// positions the cursor at the end of the inserted text, clears the selection anchor,
+    /// pushes a single undo command, clears the redo stack, and notifies observers.
+    /// Passing an empty range performs a pure insertion (equivalent to
+    /// <see cref="Insert"/> followed by a cursor advance of <c>text.Length</c> characters).
+    /// </summary>
+    public void ReplaceRange(TextRange range, string text)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        string newBuffer = BufferOperations.ReplaceRange(Buffer, range, text);
+        int startOffset = Math.Min(
+            BufferOperations.ToOffset(Buffer, range.Start),
+            BufferOperations.ToOffset(Buffer, range.End));
+        _undoStack.Push(new BufferCommand(Buffer));
+        _redoStack.Clear();
+        SetBufferInternal(newBuffer);
+        SetCursorInternal(BufferOperations.FromOffset(newBuffer, startOffset + text.Length));
+        _anchor = null;
+        foreach (var observer in _observers)
+        {
+            observer.OnBufferChanged(Buffer);
+            observer.OnCursorMoved(Cursor);
+        }
+    }
+
+    /// <summary>
+    /// Deletes the selected text. No-op when <see cref="HasSelection"/> is
+    /// <see langword="false"/>.
+    /// </summary>
+    public void DeleteSelection()
+    {
+        if (HasSelection)
+            ReplaceRange(SelectionRange, string.Empty);
     }
 
     /// <summary>
@@ -272,24 +360,29 @@ internal sealed class EditorState
     }
 
     /// <summary>
-    /// Moves the cursor to the given 1-based (line, column), clamping to the valid range.
-    /// No-op when the clamped position equals the current cursor. Does not push to the undo stack.
+    /// Moves the cursor to the given 1-based (line, column), clamping to the valid range,
+    /// and clears the selection anchor. No-op when the clamped position equals the current
+    /// cursor and no anchor is set. Does not push to the undo stack.
     /// </summary>
     public void MoveCursorTo(CursorPosition raw)
     {
         CursorPosition next = CursorNavigation.Clamp(Buffer, raw);
-        if (next == Cursor) return;
+        bool anchorCleared = _anchor is not null;
+        _anchor = null;
+        if (next == Cursor && !anchorCleared) return;
         SetCursorInternal(next);
         foreach (var observer in _observers)
             observer.OnCursorMoved(Cursor);
     }
 
     /// <summary>
-    /// Reverts the most recent buffer or cursor change. No-op when <see cref="CanUndo"/> is <see langword="false"/>.
+    /// Reverts the most recent buffer or cursor change. Clears the selection anchor.
+    /// No-op when <see cref="CanUndo"/> is <see langword="false"/>.
     /// </summary>
     public void Undo()
     {
         if (!CanUndo) return;
+        _anchor = null;
         IEditorCommand cmd = _undoStack.Pop();
         _redoStack.Push(cmd.CaptureInverse(this));
         cmd.Apply(this);
@@ -297,11 +390,13 @@ internal sealed class EditorState
     }
 
     /// <summary>
-    /// Reapplies the most recently undone change. No-op when <see cref="CanRedo"/> is <see langword="false"/>.
+    /// Reapplies the most recently undone change. Clears the selection anchor.
+    /// No-op when <see cref="CanRedo"/> is <see langword="false"/>.
     /// </summary>
     public void Redo()
     {
         if (!CanRedo) return;
+        _anchor = null;
         IEditorCommand cmd = _redoStack.Pop();
         _undoStack.Push(cmd.CaptureInverse(this));
         cmd.Apply(this);

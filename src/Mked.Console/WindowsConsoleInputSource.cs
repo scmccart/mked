@@ -24,11 +24,13 @@ internal sealed class WindowsConsoleInputSource : IConsoleInputSource
 
         WindowsConsoleInterop.GetConsoleMode(_hIn, out _savedMode);
 
-        // Enable extended flags + mouse input; clear Quick-Edit mode so wheel events aren't
-        // consumed for text selection. Processed input stays on for Ctrl+C.
+        // Enable extended flags + mouse input; clear Quick-Edit mode (would swallow wheel events)
+        // and clear ENABLE_PROCESSED_INPUT so Ctrl+C/Ctrl+X arrive as raw KEY_EVENTs that
+        // the editor can intercept for copy/cut. Ctrl+Q remains the quit shortcut.
         uint newMode = (_savedMode | WindowsConsoleInterop.ENABLE_EXTENDED_FLAGS
                                    | WindowsConsoleInterop.ENABLE_MOUSE_INPUT)
-                     & ~WindowsConsoleInterop.ENABLE_QUICK_EDIT_MODE;
+                     & ~WindowsConsoleInterop.ENABLE_QUICK_EDIT_MODE
+                     & ~WindowsConsoleInterop.ENABLE_PROCESSED_INPUT;
 
         WindowsConsoleInterop.SetConsoleMode(_hIn, newMode);
     }

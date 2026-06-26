@@ -80,4 +80,34 @@ internal static class BufferOperations
 
         return new CursorPosition(1, 1);
     }
+
+    /// <summary>
+    /// Extracts the text within <paramref name="range"/> from <paramref name="buffer"/>.
+    /// The range must be normalised (Start offset ≤ End offset).
+    /// </summary>
+    public static string Substring(string buffer, TextRange range)
+    {
+        if (buffer.Length == 0) return string.Empty;
+        int start = ToOffset(buffer, range.Start);
+        int end   = ToOffset(buffer, range.End);
+        if (start >= end) return string.Empty;
+        end = Math.Min(end, buffer.Length);
+        return buffer[start..end];
+    }
+
+    /// <summary>
+    /// Replaces the characters within <paramref name="range"/> with <paramref name="text"/>
+    /// in <paramref name="buffer"/> and returns the resulting string.
+    /// The range must be normalised (Start offset ≤ End offset); passing an empty range
+    /// (Start == End) performs a pure insertion.
+    /// </summary>
+    public static string ReplaceRange(string buffer, TextRange range, string text)
+    {
+        if (buffer.Length == 0) return text;
+        int start = ToOffset(buffer, range.Start);
+        int end   = ToOffset(buffer, range.End);
+        if (start > end) (start, end) = (end, start);
+        end = Math.Min(end, buffer.Length);
+        return buffer[..start] + text + buffer[end..];
+    }
 }

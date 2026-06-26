@@ -23,8 +23,8 @@ internal sealed class UnixConsoleInputSource : IConsoleInputSource
         UnixConsoleInterop.CfMakeRaw(ref rawTermios);
         UnixConsoleInterop.TcSetAttr(UnixConsoleInterop.STDIN_FD, UnixConsoleInterop.TCSANOW, ref rawTermios);
 
-        // Enable SGR (1006) mouse reporting: button+motion events and extended coordinates.
-        System.Console.Write("\x1b[?1000h\x1b[?1006h");
+        // Enable SGR (1006) mouse reporting and bracketed paste mode.
+        System.Console.Write("\x1b[?1000h\x1b[?1006h\x1b[?2004h");
 
         _stdin = System.Console.OpenStandardInput();
     }
@@ -65,8 +65,8 @@ internal sealed class UnixConsoleInputSource : IConsoleInputSource
         if (_disposed) return;
         _disposed = true;
 
-        // Disable SGR mouse tracking.
-        System.Console.Write("\x1b[?1000l\x1b[?1006l");
+        // Disable SGR mouse tracking and bracketed paste mode.
+        System.Console.Write("\x1b[?1000l\x1b[?1006l\x1b[?2004l");
 
         // Restore termios.
         UnixConsoleInterop.TcSetAttr(
