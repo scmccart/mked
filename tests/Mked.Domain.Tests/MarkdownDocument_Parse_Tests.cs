@@ -67,4 +67,12 @@ public class MarkdownDocument_Parse_Tests
     {
         MarkdownDocument.Parse("# Hello").Source.Should().Be("# Hello");
     }
+
+    [Fact]
+    public void EmptyDocument_FrontmatterIsNone()
+    {
+        var doc = MarkdownDocument.Parse(string.Empty);
+
+        doc.Frontmatter.IsNone.Should().BeTrue();
+    }
 }

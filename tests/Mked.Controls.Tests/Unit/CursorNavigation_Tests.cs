@@ -70,6 +70,16 @@ public class CursorNavigation_Tests
     }
 
     [Fact]
+    public void MoveRight_FromLastChar_AdvancesToEndOfLine()
+    {
+        // Line 1 "abc" has length 3; col 3 is the last character (not past-end).
+        // Moving right should advance to col 4 (one-past-end), NOT wrap to (2,1).
+        CursorPosition result = CursorNavigation.MoveRight(MultiLine, new CursorPosition(1, 3));
+
+        result.Should().Be(new CursorPosition(1, 4));
+    }
+
+    [Fact]
     public void MoveRight_EmptyBuffer_ReturnsOneOne()
     {
         CursorPosition result = CursorNavigation.MoveRight(string.Empty, new CursorPosition(1, 1));

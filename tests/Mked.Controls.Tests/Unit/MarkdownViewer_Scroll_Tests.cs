@@ -140,4 +140,40 @@ public sealed class MarkdownViewer_Scroll_Tests
 
         viewer.ScrollInfo.BlockStartLines.Count.Should().Be(viewer.BlockCount);
     }
+
+    // ─── LineHashes ───────────────────────────────────────────────────────────
+
+    [Fact]
+    public void LineHashes_Count_MatchesTotalLineCount()
+    {
+        var viewer = new MarkdownViewer(ThreeBlockDoc);
+        GetSegments(viewer); // populate cache
+
+        viewer.ScrollInfo.LineHashes.Count.Should().Be(viewer.ScrollInfo.TotalLineCount);
+    }
+
+    [Fact]
+    public void LineHashes_ContainsBlankSentinel()
+    {
+        // Each block is followed by a blank separator line; at least one should hash to 0.
+        var viewer = new MarkdownViewer(ThreeBlockDoc);
+        GetSegments(viewer);
+
+        viewer.ScrollInfo.LineHashes.Should().Contain(0);
+    }
+
+    [Fact]
+    public void LineHashes_NonBlankLines_NeverZero()
+    {
+        // Non-blank lines must not use 0 (the blank sentinel). A single-heading document
+        // has exactly one non-blank line (the heading text) plus one blank separator.
+        var viewer = new MarkdownViewer("# Heading");
+        GetSegments(viewer);
+
+        // At least one non-zero hash must exist (the heading line).
+        viewer.ScrollInfo.LineHashes.Should().Contain(h => h != 0);
+        // The only zero(s) must correspond to blank separator lines, not the heading.
+        int nonZeroCount = viewer.ScrollInfo.LineHashes.Count(h => h != 0);
+        nonZeroCount.Should().BeGreaterThanOrEqualTo(1);
+    }
 }

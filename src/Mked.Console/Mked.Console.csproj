@@ -10,6 +10,8 @@
     <!-- Spectre.Console.Cli uses reflection internally and references Assembly.Location;
          suppress all expected AOT/trim warnings from the library assembly. Our code is clean. -->
     <NoWarn>$(NoWarn);IL2026;IL2104;IL3000;IL3050</NoWarn>
+    <!-- LibraryImport source generator emits unsafe marshaling stubs. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <TrimmerRootDescriptor Include="TrimmerRoots.xml" />
@@ -17,16 +19,19 @@
   <ItemGroup>
     <PackageReference Include="MinVer" PrivateAssets="all" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="Markdig" />
     <PackageReference Include="Spectre.Console" />
     <PackageReference Include="Spectre.Console.Cli" />
     <ProjectReference Include="..\Mked.Application\Mked.Application.csproj" />
     <ProjectReference Include="..\Mked.Infrastructure\Mked.Infrastructure.csproj" />
     <ProjectReference Include="..\Mked.Controls\Mked.Controls.csproj" />
+    <Using Include="Markdig" />
     <Using Include="Mked.Application" />
     <Using Include="Mked.Controls" />
     <Using Include="Mked.Domain" />
     <Using Include="Mked.Infrastructure" />
     <Using Include="Spectre.Console" />
     <Using Include="Spectre.Console.Cli" />
+    <Using Include="Spectre.Console.Rendering" />
   </ItemGroup>
 </Project>

@@ -100,11 +100,14 @@ public sealed class StreamInputUseCase_Tests
         var reader = new CancellableFakeInputReader(cts);
         var sut = new StreamInputUseCase(reader);
 
-        // Act / Assert
-        await Assert.ThrowsAsync<OperationCanceledException>(async () =>
+        // Act
+        Func<Task> act = async () =>
         {
             await foreach (var _ in sut.ExecuteAsync(cts.Token)) { }
-        });
+        };
+
+        // Assert
+        await act.Should().ThrowAsync<OperationCanceledException>();
     }
 
     private sealed class CancellableFakeInputReader(CancellationTokenSource cts) : IInputReader

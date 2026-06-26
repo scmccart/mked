@@ -80,6 +80,7 @@ public sealed class ViewCommand(OpenFileUseCase openFile, StreamInputUseCase str
 
         using var cts = new CancellationTokenSource();
         using var lifecycle = new TerminalLifecycle(cts);
+        using var input = ConsoleInputSource.Create();
 
         await AnsiConsole.Live(viewer).StartAsync(async liveCtx =>
         {
@@ -89,75 +90,16 @@ public sealed class ViewCommand(OpenFileUseCase openFile, StreamInputUseCase str
 
             try
             {
+                using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(16));
                 while (!cts.Token.IsCancellationRequested)
                 {
                     bool dirty = false;
 
-                    if (System.Console.KeyAvailable)
+                    while (input.TryRead(out var ev))
                     {
-                        var key = System.Console.ReadKey(intercept: true);
-                        var scrollInfo = viewer.ScrollInfo;
-                        int maxLine = Math.Max(0, scrollInfo.TotalLineCount - h);
-
-                        switch (key.Key)
-                        {
-                            case ConsoleKey.DownArrow when key.Modifiers == 0:
-                            case ConsoleKey.J when key.Modifiers == 0:
-                                currentLine = Math.Min(currentLine + 1, maxLine);
-                                dirty = true;
-                                break;
-
-                            case ConsoleKey.UpArrow when key.Modifiers == 0:
-                            case ConsoleKey.K when key.Modifiers == 0:
-                                currentLine = Math.Max(currentLine - 1, 0);
-                                dirty = true;
-                                break;
-
-                            case ConsoleKey.DownArrow when key.Modifiers == ConsoleModifiers.Shift:
-                            case ConsoleKey.J when key.Modifiers == ConsoleModifiers.Shift:
-                            {
-                                var next = scrollInfo.BlockStartLines.FirstOrDefault(s => s > currentLine, currentLine);
-                                currentLine = Math.Min(next, maxLine);
-                                dirty = true;
-                                break;
-                            }
-
-                            case ConsoleKey.UpArrow when key.Modifiers == ConsoleModifiers.Shift:
-                            case ConsoleKey.K when key.Modifiers == ConsoleModifiers.Shift:
-                            {
-                                var prev = scrollInfo.BlockStartLines.LastOrDefault(s => s < currentLine, 0);
-                                currentLine = prev;
-                                dirty = true;
-                                break;
-                            }
-
-                            case ConsoleKey.PageDown:
-                            case ConsoleKey.D when key.Modifiers == ConsoleModifiers.Control:
-                                currentLine = Math.Min(currentLine + Math.Max(1, h / 2), maxLine);
-                                dirty = true;
-                                break;
-
-                            case ConsoleKey.PageUp:
-                            case ConsoleKey.U when key.Modifiers == ConsoleModifiers.Control:
-                                currentLine = Math.Max(currentLine - Math.Max(1, h / 2), 0);
-                                dirty = true;
-                                break;
-
-                            case ConsoleKey.G when key.Modifiers == ConsoleModifiers.Shift:
-                                currentLine = maxLine;
-                                dirty = true;
-                                break;
-
-                            case ConsoleKey.G when key.Modifiers == 0:
-                                currentLine = 0;
-                                dirty = true;
-                                break;
-
-                            case ConsoleKey.Q:
-                            case ConsoleKey.C when key.Modifiers == ConsoleModifiers.Control:
-                                await cts.CancelAsync();
-                                return;
-                        }
+                        if (ViewerInput.Apply(ev, ref currentLine, viewer.ScrollInfo, h, out bool quit))
+                            dirty = true;
+                        if (quit) { await cts.CancelAsync(); return; }
                     }
 
                     int newW = AnsiConsole.Profile.Width;
@@ -177,7 +119,7 @@ public sealed class ViewCommand(OpenFileUseCase openFile, StreamInputUseCase str
                         liveCtx.UpdateTarget(viewer);
                     }
 
-                    await Task.Delay(16, cts.Token);
+                    await timer.WaitForNextTickAsync(cts.Token);
                 }
             }
             catch (OperationCanceledException) { }
@@ -201,6 +143,7 @@ public sealed class ViewCommand(OpenFileUseCase openFile, StreamInputUseCase str
 
         using var cts = new CancellationTokenSource();
         using var lifecycle = new TerminalLifecycle(cts);
+        using var input = ConsoleInputSource.Create();
         using var watcher = new FileWatcherAdapter(settings.Path!);
 
         // Feed file-change notifications into a channel so we can consume them in the poll loop
@@ -210,14 +153,27 @@ public sealed class ViewCommand(OpenFileUseCase openFile, StreamInputUseCase str
                 FullMode = System.Threading.Channels.BoundedChannelFullMode.DropWrite,
             });
 
+        Exception? watcherFault = null;
         _ = Task.Run(async () =>
         {
-            await foreach (var _ in watcher.WatchAsync(cts.Token))
+            try
             {
-                reloadChannel.Writer.TryWrite(true);
+                await foreach (var _ in watcher.WatchAsync(cts.Token))
+                {
+                    reloadChannel.Writer.TryWrite(true);
+                }
             }
-
-            reloadChannel.Writer.TryComplete();
+            catch (OperationCanceledException) { }
+            catch (Exception ex)
+            {
+                watcherFault = ex;
+                System.Threading.Thread.MemoryBarrier(); // ensure fault write is visible before cancel propagates
+                cts.Cancel();
+            }
+            finally
+            {
+                reloadChannel.Writer.TryComplete();
+            }
         }, cts.Token);
 
         await AnsiConsole.Live(viewer).StartAsync(async liveCtx =>
@@ -228,6 +184,7 @@ public sealed class ViewCommand(OpenFileUseCase openFile, StreamInputUseCase str
 
             try
             {
+                using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(16));
                 while (!cts.Token.IsCancellationRequested)
                 {
                     bool dirty = false;
@@ -238,76 +195,30 @@ public sealed class ViewCommand(OpenFileUseCase openFile, StreamInputUseCase str
                         var reloaded = await _openFile.ExecuteAsync(settings.Path!);
                         if (reloaded is Result<OpenedFile, MkedError>.Ok(var newFile))
                         {
-                            baseViewer = BuildViewer(newFile.Source, settings);
+                            var newViewer = BuildViewer(newFile.Source, settings);
+                            // Populate the render cache so LineHashes are available for
+                            // anchor remapping before the new viewer is displayed.
+                            newViewer.Measure(
+                                RenderOptions.Create(AnsiConsole.Console),
+                                AnsiConsole.Profile.Width);
+                            currentLine = ScrollAnchor.RemapTopLine(
+                                viewer.ScrollInfo.LineHashes,
+                                newViewer.ScrollInfo.LineHashes,
+                                currentLine,
+                                h);
+                            baseViewer = newViewer;
+                            // Refresh viewer immediately so the input loop below clamps
+                            // currentLine against the new document's ScrollInfo, not the old one.
+                            viewer = baseViewer with { TopLineIndex = currentLine, ViewportHeight = h };
                             dirty = true;
                         }
                     }
 
-                    if (System.Console.KeyAvailable)
+                    while (input.TryRead(out var ev))
                     {
-                        var key = System.Console.ReadKey(intercept: true);
-                        var scrollInfo = viewer.ScrollInfo;
-                        int maxLine = Math.Max(0, scrollInfo.TotalLineCount - h);
-
-                        switch (key.Key)
-                        {
-                            case ConsoleKey.DownArrow when key.Modifiers == 0:
-                            case ConsoleKey.J when key.Modifiers == 0:
-                                currentLine = Math.Min(currentLine + 1, maxLine);
-                                dirty = true;
-                                break;
-
-                            case ConsoleKey.UpArrow when key.Modifiers == 0:
-                            case ConsoleKey.K when key.Modifiers == 0:
-                                currentLine = Math.Max(currentLine - 1, 0);
-                                dirty = true;
-                                break;
-
-                            case ConsoleKey.DownArrow when key.Modifiers == ConsoleModifiers.Shift:
-                            case ConsoleKey.J when key.Modifiers == ConsoleModifiers.Shift:
-                            {
-                                var next = scrollInfo.BlockStartLines.FirstOrDefault(s => s > currentLine, currentLine);
-                                currentLine = Math.Min(next, maxLine);
-                                dirty = true;
-                                break;
-                            }
-
-                            case ConsoleKey.UpArrow when key.Modifiers == ConsoleModifiers.Shift:
-                            case ConsoleKey.K when key.Modifiers == ConsoleModifiers.Shift:
-                            {
-                                var prev = scrollInfo.BlockStartLines.LastOrDefault(s => s < currentLine, 0);
-                                currentLine = prev;
-                                dirty = true;
-                                break;
-                            }
-
-                            case ConsoleKey.PageDown:
-                            case ConsoleKey.D when key.Modifiers == ConsoleModifiers.Control:
-                                currentLine = Math.Min(currentLine + Math.Max(1, h / 2), maxLine);
-                                dirty = true;
-                                break;
-
-                            case ConsoleKey.PageUp:
-                            case ConsoleKey.U when key.Modifiers == ConsoleModifiers.Control:
-                                currentLine = Math.Max(currentLine - Math.Max(1, h / 2), 0);
-                                dirty = true;
-                                break;
-
-                            case ConsoleKey.G when key.Modifiers == ConsoleModifiers.Shift:
-                                currentLine = maxLine;
-                                dirty = true;
-                                break;
-
-                            case ConsoleKey.G when key.Modifiers == 0:
-                                currentLine = 0;
-                                dirty = true;
-                                break;
-
-                            case ConsoleKey.Q:
-                            case ConsoleKey.C when key.Modifiers == ConsoleModifiers.Control:
-                                await cts.CancelAsync();
-                                return;
-                        }
+                        if (ViewerInput.Apply(ev, ref currentLine, viewer.ScrollInfo, h, out bool quit))
+                            dirty = true;
+                        if (quit) { await cts.CancelAsync(); return; }
                     }
 
                     int newW = AnsiConsole.Profile.Width;
@@ -327,11 +238,14 @@ public sealed class ViewCommand(OpenFileUseCase openFile, StreamInputUseCase str
                         liveCtx.UpdateTarget(viewer);
                     }
 
-                    await Task.Delay(16, cts.Token);
+                    await timer.WaitForNextTickAsync(cts.Token);
                 }
             }
             catch (OperationCanceledException) { }
         });
+
+        if (watcherFault is not null)
+            return ErrorPresenter.Show(new MkedError.StreamError(watcherFault.Message));
 
         return 0;
     }
@@ -349,6 +263,9 @@ public sealed class ViewCommand(OpenFileUseCase openFile, StreamInputUseCase str
 
         using var cts = new CancellationTokenSource();
         using var lifecycle = new TerminalLifecycle(cts);
+        // Stream mode reads its content from stdin, so keyboard is handled separately via
+        // the null-mouse source (Console.KeyAvailable / ReadKey) to avoid conflicts.
+        using var input = new NullMouseInputSource();
 
         var docStream = _streamInput.ExecuteAsync(cts.Token);
         var viewerStream = renderer.Stream(docStream, cts.Token);
@@ -360,14 +277,27 @@ public sealed class ViewCommand(OpenFileUseCase openFile, StreamInputUseCase str
                 FullMode = System.Threading.Channels.BoundedChannelFullMode.DropOldest,
             });
 
+        Exception? streamFault = null;
         var streamTask = Task.Run(async () =>
         {
-            await foreach (var v in viewerStream)
+            try
             {
-                viewerChannel.Writer.TryWrite(v);
+                await foreach (var v in viewerStream)
+                {
+                    viewerChannel.Writer.TryWrite(v);
+                }
             }
-
-            viewerChannel.Writer.TryComplete();
+            catch (OperationCanceledException) { }
+            catch (Exception ex)
+            {
+                streamFault = ex;
+                System.Threading.Thread.MemoryBarrier(); // ensure fault write is visible before cancel propagates
+                cts.Cancel();
+            }
+            finally
+            {
+                viewerChannel.Writer.TryComplete();
+            }
         }, cts.Token);
 
         await AnsiConsole.Live(viewer).StartAsync(async liveCtx =>
@@ -378,6 +308,7 @@ public sealed class ViewCommand(OpenFileUseCase openFile, StreamInputUseCase str
 
             try
             {
+                using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(16));
                 while (!cts.Token.IsCancellationRequested)
                 {
                     bool dirty = false;
@@ -389,71 +320,11 @@ public sealed class ViewCommand(OpenFileUseCase openFile, StreamInputUseCase str
                         dirty = true;
                     }
 
-                    if (System.Console.KeyAvailable)
+                    while (input.TryRead(out var ev))
                     {
-                        var key = System.Console.ReadKey(intercept: true);
-                        var scrollInfo = viewer.ScrollInfo;
-                        int maxLine = Math.Max(0, scrollInfo.TotalLineCount - h);
-
-                        switch (key.Key)
-                        {
-                            case ConsoleKey.DownArrow when key.Modifiers == 0:
-                            case ConsoleKey.J when key.Modifiers == 0:
-                                currentLine = Math.Min(currentLine + 1, maxLine);
-                                dirty = true;
-                                break;
-
-                            case ConsoleKey.UpArrow when key.Modifiers == 0:
-                            case ConsoleKey.K when key.Modifiers == 0:
-                                currentLine = Math.Max(currentLine - 1, 0);
-                                dirty = true;
-                                break;
-
-                            case ConsoleKey.DownArrow when key.Modifiers == ConsoleModifiers.Shift:
-                            case ConsoleKey.J when key.Modifiers == ConsoleModifiers.Shift:
-                            {
-                                var next = scrollInfo.BlockStartLines.FirstOrDefault(s => s > currentLine, currentLine);
-                                currentLine = Math.Min(next, maxLine);
-                                dirty = true;
-                                break;
-                            }
-
-                            case ConsoleKey.UpArrow when key.Modifiers == ConsoleModifiers.Shift:
-                            case ConsoleKey.K when key.Modifiers == ConsoleModifiers.Shift:
-                            {
-                                var prev = scrollInfo.BlockStartLines.LastOrDefault(s => s < currentLine, 0);
-                                currentLine = prev;
-                                dirty = true;
-                                break;
-                            }
-
-                            case ConsoleKey.PageDown:
-                            case ConsoleKey.D when key.Modifiers == ConsoleModifiers.Control:
-                                currentLine = Math.Min(currentLine + Math.Max(1, h / 2), maxLine);
-                                dirty = true;
-                                break;
-
-                            case ConsoleKey.PageUp:
-                            case ConsoleKey.U when key.Modifiers == ConsoleModifiers.Control:
-                                currentLine = Math.Max(currentLine - Math.Max(1, h / 2), 0);
-                                dirty = true;
-                                break;
-
-                            case ConsoleKey.G when key.Modifiers == ConsoleModifiers.Shift:
-                                currentLine = maxLine;
-                                dirty = true;
-                                break;
-
-                            case ConsoleKey.G when key.Modifiers == 0:
-                                currentLine = 0;
-                                dirty = true;
-                                break;
-
-                            case ConsoleKey.Q:
-                            case ConsoleKey.C when key.Modifiers == ConsoleModifiers.Control:
-                                await cts.CancelAsync();
-                                return;
-                        }
+                        if (ViewerInput.Apply(ev, ref currentLine, viewer.ScrollInfo, h, out bool quit))
+                            dirty = true;
+                        if (quit) { await cts.CancelAsync(); return; }
                     }
 
                     int newW = AnsiConsole.Profile.Width;
@@ -479,13 +350,16 @@ public sealed class ViewCommand(OpenFileUseCase openFile, StreamInputUseCase str
                     if (renderer.Errors.TryRead(out var err))
                         ErrorPresenter.Show(err);
 
-                    await Task.Delay(16, cts.Token);
+                    await timer.WaitForNextTickAsync(cts.Token);
                 }
             }
             catch (OperationCanceledException) { }
 
             await streamTask.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
         });
+
+        if (streamFault is not null)
+            return ErrorPresenter.Show(new MkedError.StreamError(streamFault.Message));
 
         return 0;
     }

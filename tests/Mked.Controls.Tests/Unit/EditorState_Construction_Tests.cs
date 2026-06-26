@@ -41,4 +41,12 @@ public class EditorState_Construction_Tests
 
         state.Cursor.Should().Be(new CursorPosition(1, 1));
     }
+
+    [Fact]
+    public void NullBuffer_ThrowsArgumentNullException()
+    {
+        Action act = () => _ = new EditorState(null!);
+
+        act.Should().Throw<ArgumentNullException>();
+    }
 }

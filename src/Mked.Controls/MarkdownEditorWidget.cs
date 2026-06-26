@@ -1,14 +1,17 @@
 namespace Mked.Controls;
 
-/// <summary>Renders a raw text buffer with a block cursor and syntax-highlight overlays.</summary>
+/// <summary>Renders a raw text buffer with a block cursor, syntax-highlight overlays, and an optional text selection.</summary>
 public sealed class MarkdownEditorWidget : IRenderable
 {
+
     private readonly string _buffer;
     private readonly (int Line, int Column) _cursor;
     private readonly IReadOnlyList<StyledSpan> _highlights;
     private readonly int _topLineIndex;
     private readonly int? _viewportHeight;
     private readonly bool _showCursor;
+    private readonly int _selectionStartOffset;
+    private readonly int _selectionEndOffset;
 
     /// <summary>
     /// Initialises a new <see cref="MarkdownEditorWidget"/>.
@@ -19,13 +22,17 @@ public sealed class MarkdownEditorWidget : IRenderable
     /// <param name="topLineIndex">0-based index of the first line to display.</param>
     /// <param name="viewportHeight">Maximum number of lines to render; <see langword="null"/> renders all lines.</param>
     /// <param name="showCursor">When <see langword="false"/> the block-cursor cell is not rendered with invert decoration.</param>
+    /// <param name="selectionStartOffset">0-based start offset of the selection, or <c>-1</c> when no selection is active.</param>
+    /// <param name="selectionEndOffset">0-based exclusive end offset of the selection, or <c>-1</c> when no selection is active.</param>
     public MarkdownEditorWidget(
         string buffer,
         (int Line, int Column) cursor,
         IReadOnlyList<StyledSpan> highlights,
         int topLineIndex = 0,
         int? viewportHeight = null,
-        bool showCursor = true)
+        bool showCursor = true,
+        int selectionStartOffset = -1,
+        int selectionEndOffset = -1)
     {
         _buffer = buffer;
         _cursor = cursor;
@@ -33,6 +40,8 @@ public sealed class MarkdownEditorWidget : IRenderable
         _topLineIndex = topLineIndex;
         _viewportHeight = viewportHeight;
         _showCursor = showCursor;
+        _selectionStartOffset = selectionStartOffset;
+        _selectionEndOffset = selectionEndOffset;
     }
 
     /// <inheritdoc/>
@@ -80,14 +89,8 @@ public sealed class MarkdownEditorWidget : IRenderable
                     break;
                 }
 
-                char ch = line[pos];
                 int offset = lineStartOffset + pos;
-                Style charStyle = GetStyleAtOffset(offset);
-
-                if (isCursorPos)
-                {
-                    charStyle = Style.Plain.Decoration(Decoration.Invert);
-                }
+                Style charStyle = GetEffectiveStyle(offset, isCursorPos);
 
                 int runEnd = pos + 1;
                 while (runEnd < visibleLength)
@@ -96,7 +99,7 @@ public sealed class MarkdownEditorWidget : IRenderable
                     if (isRunCursorPos)
                         break;
 
-                    Style nextStyle = GetStyleAtOffset(lineStartOffset + runEnd);
+                    Style nextStyle = GetEffectiveStyle(lineStartOffset + runEnd, false);
                     if (!StyleEquals(nextStyle, charStyle))
                         break;
 
@@ -130,6 +133,28 @@ public sealed class MarkdownEditorWidget : IRenderable
         for (int i = 0; i < lineIdx; i++)
             offset += lines[i].Length + 1;
         return offset;
+    }
+
+    /// <summary>
+    /// Returns the effective style for a character cell, combining syntax highlighting,
+    /// optional selection background, and the block-cursor invert (which always wins).
+    /// </summary>
+    private Style GetEffectiveStyle(int offset, bool isCursorPos)
+    {
+        if (isCursorPos)
+            return Style.Plain.Decoration(Decoration.Invert | Decoration.Bold);
+
+        Style style = GetStyleAtOffset(offset);
+
+        // Apply reverse-video when offset falls within the selection range.
+        if (_selectionStartOffset >= 0
+            && offset >= _selectionStartOffset
+            && offset < _selectionEndOffset)
+        {
+            style = new Style(style.Foreground, style.Background, style.Decoration | Decoration.Invert);
+        }
+
+        return style;
     }
 
     private Style GetStyleAtOffset(int offset)
